@@ -1,0 +1,307 @@
+package com.webapp.admin.ctrl;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.sangs.support.AdminMenu;
+import com.sangs.support.DataMap;
+import com.sangs.support.EduMap;
+import com.sangs.util.ParamUtil;
+import com.webapp.admin.service.AdminCommonService;
+import com.webapp.admin.service.AdminMtCodeMngrService;
+
+/**
+ *
+ * Description : 관리시스템 시스템 관련 컨트롤러
+ *
+ * Modification Information
+ * 수정일           수정자                            수정내용
+ * -----------  -----------------------------  -------
+ * 2016. 3. 29.  이진영, sweetjy09@sangs.co.kr     최초작성
+ *
+ */
+@Controller
+public class AdminMtCodeMngrController {
+
+    private Logger log = LogManager.getLogger(this.getClass());
+
+    @Resource(name = "adminCommonService")
+    private AdminCommonService    adminCommonService;
+
+    @Resource(name = "adminMtCodeMngrService")
+    private AdminMtCodeMngrService    adminMtCodeMngrService;
+
+
+    /**
+     * 시스템관리 > 공통코드 리스트
+     *
+     * 수정일  : 2016. 5. 16.
+     * 수정자  : 김학규
+     *
+     * @param request
+     * @param res
+     * @param rMap
+     * @return
+     * @throws Exception
+     */
+    // TODO: 시스템관리관리 > 공통코드 리스트
+    @RequestMapping(value = "/admin/sysman/mtcodeList.do")
+    public String mtcodeList(HttpServletRequest request, HttpServletResponse res, DataMap rMap) throws Exception {
+
+        try {
+
+            // 메뉴정보
+            AdminMenu menuInfo = new AdminMenu(request, res, rMap, adminCommonService);
+            menuInfo.adminMenuExec(request, res, rMap, adminCommonService);
+
+            rMap.setString("useYn", ParamUtil.getStrParam(rMap.getString("useYn"), "Y"));
+
+            int totalCnt = adminMtCodeMngrService.getMtcodeListCount(rMap);
+            
+            List<EduMap> map = adminMtCodeMngrService.getMtcodeList(rMap);
+
+            request.setAttribute("LIST_DATA",map);
+            request.setAttribute("totalCnt",totalCnt);
+
+            request.setAttribute("REQUEST_DATA", rMap);
+
+        } catch (Exception e) {
+            
+            throw new Exception(e);
+        }
+
+        return "/admin/sysman/mtcode_list";
+
+    }
+
+    /**
+     * 시스템관리 > 공통코드 등록/수정
+     *
+     * 수정일  : 2016. 5. 16.
+     * 수정자  : 김학규
+     *
+     * @param request
+     * @param res
+     * @param rMap
+     * @return
+     * @throws Exception
+     */
+    // TODO: 시스템관리관리 > 공통코드 등록/수정
+    @RequestMapping(value = "/admin/sysman/mtcodeForm.do")
+    public String mtcodeForm(HttpServletRequest request, HttpServletResponse res, DataMap rMap) throws Exception {
+
+        // 메뉴정보
+        AdminMenu menuInfo = new AdminMenu(request, res, rMap, adminCommonService);
+        menuInfo.adminMenuExec(request, res, rMap, adminCommonService);
+        
+        // 대분류 데이터
+        if(rMap.getString("mtCode") != null && rMap.getString("qu") != null && !rMap.getString("pageMode").equals("reg") ) {
+        	
+        	request.setAttribute("VIEW_DATA", adminMtCodeMngrService.getMtcodInfo(rMap));
+        }
+
+        // 소분류 데이터
+        if(!rMap.getString("mode").equals("mt") && rMap.getString("qu").equals("update")) {
+        	request.setAttribute("SUB_VIEW_DATA", adminMtCodeMngrService.getMtcodeSubInfo(rMap));
+        }
+        
+        // 등록구분이 없다면 대분류로 default 설정
+        rMap.set("mode", ParamUtil.getStrParam(rMap.getString("mode"), "mt"));
+        
+        // 등록유형이 없다면 insert default 설정
+        rMap.set("qu", ParamUtil.getStrParam(rMap.getString("qu"), "insert"));
+
+        
+        request.setAttribute("REQUEST_DATA", rMap);
+        
+        return "/admin/sysman/mtcode_form";
+
+    }
+
+    /**
+     * 시스템관리 > 공통코드 등록/수정
+     *
+     * 수정일  : 2016. 5. 16.
+     * 수정자  : 김학규
+     *
+     * @param request
+     * @param res
+     * @param rMap
+     * @return
+     * @throws Exception
+     */
+    // TODO: 시스템관리관리 > 공통코드 등록/수정 실행
+    @RequestMapping(value = "/admin/sysman/mtcodeFormExec.do")
+    public String mtcodeFormExec(HttpServletRequest request, HttpServletResponse res, DataMap rMap) throws Exception {
+
+        try {
+
+            // 메뉴정보
+            AdminMenu menuInfo = new AdminMenu(request, res, rMap, adminCommonService);
+            menuInfo.adminMenuExec(request, res, rMap, adminCommonService);
+
+            // 액션값
+            String qu = rMap.getString("qu");
+
+            // 모드명 대분류 : mt 소분류 mtsub
+            String mode = rMap.getString("mode");
+
+            //리턴 페이지 설정을 위한 세팅
+
+            // alert 메세지
+            String msg="";
+            String nextSubcmd="list"; // 실행후 이동 화면 정의
+            String mtCode=ParamUtil.getStrParam(rMap.getString("mtCode"), "");
+            String mtSubCode=ParamUtil.getStrParam(rMap.getString("mtSubCode"), "");
+
+            // 분류, 코드명 대문자로 치환
+            mtCode = mtCode.toUpperCase();
+            mtSubCode = mtSubCode.toUpperCase();
+
+            rMap.setString("mtCode" , mtCode);
+            rMap.setString("mtSubCode" , mtSubCode);
+            // 대분류 등록/수정
+            if(mode.equals("mt")){
+                //등록
+                if(qu.equals("insert")){
+                    adminMtCodeMngrService.insertMtcodeInfo(rMap);
+                    qu="";
+                    msg="등록하였습니다.";
+                // 수정
+                }else if(qu.equals("update")){
+                    adminMtCodeMngrService.updateMtcodeInfo(rMap);
+                    qu="update";
+                    msg="수정하였습니다.";
+                }
+            }
+            // 소분류 등록/수정
+            else {
+                //등록
+                if(qu.equals("insert")){
+                    adminMtCodeMngrService.insertMtcodeSubInfo(rMap);
+                    //등록후 소분류 목록으로 이동
+                    qu="";
+                    msg="등록하였습니다.";
+                    //등록후 소분류 목록으로 이동
+                }
+                // 수정
+                else if(qu.equals("update")){
+                    adminMtCodeMngrService.updateMtcodeSubInfo(rMap);
+                    qu="update";
+                    msg="수정하였습니다.";
+
+                }
+
+            }
+            request.setAttribute("msg", msg);
+            request.setAttribute("returnUrl", "/admin/sysman/mtcodeSubList.do");
+
+            request.setAttribute("mtCode", mtCode);
+            request.setAttribute("mtSubCode", mtSubCode);
+            request.setAttribute("qu", qu);
+            request.setAttribute("mode", mode);
+
+            
+            System.out.println("mtCode===> " + mtCode);
+            
+            
+        } catch (Exception e) {
+            
+
+            request.setAttribute("msg", "등록에 실패 하였습니다.");
+            request.setAttribute("returnUrl", "/admin/sysman/mtcodeSubList.do");
+
+
+            throw new Exception(e);
+        }
+
+        
+        
+     
+        
+        return "/admin/sysman/mtcode_exec";
+
+    }
+
+    /**
+     * 시스템관리 > 공통코드 상세 리스트
+     *
+     * 수정일  : 2016. 5. 16.
+     * 수정자  : 김학규
+     *
+     * @param request
+     * @param res
+     * @param rMap
+     * @return
+     * @throws Exception
+     */
+    // TODO: 시스템관리관리 > 공통코드 상세 리스트
+    @RequestMapping(value = "/admin/sysman/mtcodeSubList.do")
+    public String mtcodeSubList(HttpServletRequest request, HttpServletResponse res, DataMap rMap) throws Exception {
+
+        try {
+
+            // 메뉴정보
+            AdminMenu menuInfo = new AdminMenu(request, res, rMap, adminCommonService);
+            menuInfo.adminMenuExec(request, res, rMap, adminCommonService);
+
+            request.setAttribute("LIST_DATA", adminMtCodeMngrService.getMtcodeSubList(rMap));
+            request.setAttribute("VIEW_DATA", adminMtCodeMngrService.getMtcodInfo(rMap));
+
+        } catch (Exception e) {
+            
+            throw new Exception(e);
+        }
+
+        return "/admin/sysman/mtcode_sub_list";
+
+    }
+
+
+    /**
+     * 시스템관리 > 공통코드 소분류 삭제
+     *
+     * 수정일  : 2016. 5. 31.
+     * 수정자  : 김학규
+     *
+     * @param request
+     * @param res
+     * @param rMap
+     * @return
+     * @throws Exception
+     */
+    // TODO: 시스템관리관리 > 공통코드 상세 리스트
+    @RequestMapping(value = "/admin/sysman/deleteMtcodeSubInfo.do")
+    public String mtcodeDelete(HttpServletRequest request, HttpServletResponse res, DataMap rMap) throws Exception {
+     // 모드명 대분류 : mt 소분류 mtsub
+        String mode = rMap.getString("mode");
+        String msg="";
+        String mtCode=ParamUtil.getStrParam(rMap.getString("mtCode"), "");
+
+        if(!"mt".equals(mode)){
+            try{
+                adminMtCodeMngrService.deleteMtcodeSubInfo(rMap);
+                msg="삭제되었습니다.";
+            }catch(Exception e){
+                msg="삭제중 에러가 발생하였습니다. 다시 시도해주세요";
+            }
+        }
+
+        request.setAttribute("returnUrl", "/admin/sysman/mtcodeList.do");
+
+        request.setAttribute("msg", msg);
+        request.setAttribute("mtCode", mtCode);
+        request.setAttribute("mode", mode);
+
+        return "/admin/sysman/mtcode_exec";
+    }
+
+}

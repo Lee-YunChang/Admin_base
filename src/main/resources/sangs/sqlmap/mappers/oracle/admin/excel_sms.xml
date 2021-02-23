@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminExcelSmsMapper">
+    <insert id="insertExcelSmsUpload"  parameterType="dmap">
+     	INSERT INTO TB_SMS_FILE
+			(FILE_ID
+			,FILE_SIZE
+			,FTYPE
+			,SAVPATH
+			,ORGFILE
+			,SAVFILE
+			,REG_NO
+			,REG_DATE
+			) VALUES (
+			(SELECT NVL(MAX(FILE_ID),0)+1 FROM TB_SMS_FILE)
+			, #{fileSize}
+			, #{fileType}
+			, #{filePath}
+			, #{fileOrgName}
+			, #{fileSavName}
+			, #{SES_USERNO}
+			, SYSDATE
+			)
+     </insert>
+     
+     <!-- 대분류 목록조회 -->
+    <select id="getExcelSmsList" parameterType="dmap" resultType="emap">
+    	SELECT AA.*
+        FROM  (
+	        SELECT
+	            ROW_NUMBER() OVER(ORDER BY FILE_ID DESC) AS NUM
+	            , FILE_ID
+                , FTYPE
+                , SAVPATH
+                , ORGFILE
+                , SAVFILE
+                , REG_NO
+                , (SELECT UNITY_ID FROM VW_TB_USERS WHERE UNITY_MBERNO = REG_NO) REG_ID
+                , TO_CHAR(REG_DATE,'YYYY-MM-DD HH24:MI:SS') REG_DATE
+	        FROM TB_SMS_FILE
+	        WHERE 1=1
+	    ) AA
+	    WHERE 1=1
+        <if test="startNo != null and startNo != '0'"> 
+	         AND NUM BETWEEN #{startNo} AND #{endNo}
+	    </if>
+    </select>
+
+    <!-- 대분류 목록조회 count -->
+    <select id="getExcelSmsListCount" parameterType="dmap" resultType="int">
+         SELECT COUNT (*) total FROM TB_SMS_FILE
+         WHERE 1=1
+    </select>
+    
+    <select id="getExcelFileInfo" resultType="emap" parameterType="dmap">
+		SELECT SAVPATH
+			, ORGFILE
+			, SAVFILE
+		FROM TB_SMS_FILE
+		WHERE FILE_ID = #{fileId}
+   </select>
+</mapper>
+

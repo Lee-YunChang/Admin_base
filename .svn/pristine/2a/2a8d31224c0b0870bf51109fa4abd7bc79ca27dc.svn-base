@@ -1,0 +1,467 @@
+
+##############################################################
+# System Info  
+##############################################################
+
+Globals.ServerMode = real
+
+
+# DB\uc11c\ubc84 \ud0c0\uc785(ORACLE, MYSQL) - datasource \ubc0f sqlMap \ud30c\uc77c \uc9c0\uc815\uc5d0 \uc0ac\uc6a9\ub428(\uc18c\ubb38\uc790\ub85c)
+Globals.DbType=oracle
+
+#oracle
+Globals.DriverClassName=oracle.jdbc.driver.OracleDriver
+#Globals.Url=jdbc:oracle:thin:@192.168.3.31:1521:DKFCODB
+#Globals.UserName=LMS_USR
+#Globals.Password=lmssoldv!9
+
+Globals.Url=jdbc:oracle:thin:@192.168.1.216:1521:PKFCODB02
+Globals.UserName=LMS_USR
+Globals.Password=lmssol!#123
+
+
+# System type dev, real - \uc2dc\uc2a4\ud15c \uad6c\ubd84 dev : \ub85c\uceec \ud639\uc740 \ud14c\uc2a4\ud2b8 , real : \uc6b4\uc601\uc11c\ubc84 ( real \uc77c\ub54c\ub9cc SMS, Email \ub4f1 \uc774 \ubc1c\uc1a1\ub41c\ub2e4.)
+Globals.systemType=real
+
+#LOGIN SESSION NAME
+Globals.loginSessionNm = SES_LMS_INFO
+
+#DataMap debug mode setting
+#Globals.dataMapDebug = false
+#Globals.domain= http://edusa.humanrights.go.kr
+#Globals.domainHost = edusa.humanrights.go.kr
+#Globals.domainPort = 80
+#Globals.domainSSL= https://edusa.humanrights.go.kr
+#Globals.domainSSLHost = edusa.humanrights.go.kr
+#Globals.domainSSLPort = 443
+
+#Domain setting
+Globals.dataMapDebug = false
+Globals.domain= http://edu.kinfa.or.kr
+Globals.domainHost = edu.kinfa.or.kr
+Globals.domainPort = 80
+Globals.domainSSL= http://edu.kinfa.or.kr
+Globals.domainSSLHost = edu.kinfa.or.kr
+Globals.domainSSLPort = 80
+
+
+Globals.sms.callback= 0221288332
+
+# SSL\uc801\uc6a9 \uc81c\uc678\ub300\uc0c1 url\uc815\uc758(\uacf5\ud1b5\uc601\uc5ed\uc5d0 \ud55c\ud568)
+Globals.sslSkipUrls= /academy/common/common.do;/academy/common/login.do;
+
+#CONTEXT
+Globals.academy= academy
+Globals.admin= admin
+Globals.classdesk= classdesk
+Globals.cyber= cyber
+
+##############################################################
+# AddFile Info
+##############################################################
+Globals.contentsDomain = http://lms.kinfa.go.kr
+Globals.CDNURL = /edu-data/contents
+Globals.ContentsRootPath= /app/lms/edu-data/contents
+Globals.ContentsRootUri= edu-data/contents
+Globals.ContentsRootMobileUri= edu-data/contents/mobile
+Globals.ContentsRootPreviewUri= edu-data/contents/sample
+
+Globals.cyberUrl = /cyber/main.do
+Globals.classdeskUrl = /classdesk/main.do
+Globals.frontMainUri = /academy/main/main.do
+Globals.AdminMainUri = /admin/main/index.do
+Globals.classdeskDomain = http://lms.kinfa.go.kr
+
+##############################################################
+# AddFile Info
+##############################################################
+Globals.addFileRootPrivePath = /app/lms/edu-data/upload
+Globals.addFileRootPath = /app/lms/edu-data/upload
+Globals.rootImgPath = /edu-data/upload
+Globals.addFileTempPath = temp
+Globals.addFileRooturi = edu-data/upload
+Globals.addFileRooturi2 = /edu-data/upload
+Globals.addFileSample =/edu-data/sample_down
+Globals.addFileMaxSize = 5242880
+Globals.addFileMaxMegaSize = 5
+Globals.courseImgPath = course
+Globals.sitemngImgPath = sitemng
+Globals.ExptUserImgPath = expt_user
+Globals.resultFormFilePath = attendance
+Globals.resultLectureFilePath = lecture
+
+##############################################################
+# DownloadFile Info
+##############################################################
+
+Globals.downFileRootPath = /app/lms/edu-data/download
+Globals.downFileServerPath = http://lms.kinfa.go.kr/edu-data/download
+##############################################################
+# MAIL SERVER Info
+##############################################################
+Globals.mailTemplePath = mailTemplet
+
+##############################################################
+# SmsTemplet Info
+##############################################################
+Globals.SMSTplTestCode = 1
+
+##############################################################
+# SmsTemplet Info
+##############################################################
+Globals.MailTplTestCode = 1
+
+##############################################################
+# DEFAULT Info
+##############################################################
+
+Globals.defaultRowCount = 10
+Globals.defaultPerPageCount = 10
+Globals.exptUserListRowCount = 100
+
+
+Globals.defaultCompVal = 70
+Globals.defaultCompGval = 90
+Globals.defaultCompSval = 70
+Globals.defaultExptFixCnt = 35
+
+
+##############################################################
+# BBS Info
+##############################################################
+Globals.bbsFilePath = edbbs
+Globals.bbsPopPath = popupimg
+Globals.bbsDefaultRowCount = 20
+Globals.bbsFileCnt = 2
+
+Globals.tutorFilePath = tutor
+Globals.tutorPopPath = popupimg
+Globals.tutorDefaultRowCount = 20
+Globals.tutorFileCnt = 2
+
+Globals.bbsTutorNoticeFilePath = edbbs/1034
+Globals.bbsDataFilePath = edbbs/7
+Globals.bbsNegativeFilePath = edbbs/21 
+Globals.bbsTranslationFilePath = edbbs/9
+Globals.bbsAdvFilePath = edbbs/11
+Globals.bannerFilePath = edbbs/banner
+Globals.classdeskFilePath = edbbs/classdesk
+
+Globals.lectureFilePath = lecture
+##############################################################
+# ClassDesk Info
+##############################################################
+Globals.classDeskQuizFilePath = quiz
+Globals.classDeskReportFilePath = report
+Globals.classDeskQuizUserFilePath = quiz_user
+Globals.classDeskReportUserFilePath = report_user
+Globals.classDeskBbsFilePath = edbbs
+Globals.classDeskFileCnt = 2
+
+
+##############################################################
+# ASP Site Info
+##############################################################
+
+Globals.aspSiteLogImgPath = sitemng
+Globals.aspSiteLeftImgPath = sitemng
+Globals.aspSiteMainImgPath = sitemng
+
+##############################################################
+# user Grade,status Info
+##############################################################
+
+Globals.userGradeNo_normal = 1
+Globals.userGradeNo_compMngr = 2
+Globals.userGradeNo_eduMan = 5
+Globals.userGradeNo_superAdmin = 100
+
+Globals.userStatus_do = 1
+Globals.userStatus_doApply = 0
+Globals.userStatus_cancelApply = -1
+Globals.userStatus_cancel = -10
+
+##############################################################
+# Email Sever Info
+##############################################################
+Globals.mailSenderAliasName = \uc11c\ubbfc\uae08\uc735\uc9c4\ud765\uc6d0
+Globals.mailSenderMailAddr = edu@kinfa.or.kr
+#Globals.mailEventId = 68
+#Globals.mailContentType = text/html
+#Globals.mailInsertType = new
+#Globals.mailDataType = string
+#Globals.mailSucCode = 100
+Globals.mail.transport.protocol = smtp
+Globals.mail.smtp.host = mail.kinfa.or.kr
+Globals.mail.smtp.port = 25
+Globals.mail.smtp.auth = false
+Globals.mail.smtp.auth.user = sendmail@kinfa.or.kr
+Globals.mail.smtp.auth.pass = 1q2w3e4r!
+Globals.mail.smtp.starttls.enable = true
+
+#real_email config
+Globals.mail.authid = sendmail@kinfa.or.kr
+Globals.mail.authpw = 1q2w3e4r!
+
+Globals.mail = edu@kinfa.or.kr
+Globals.mail.username = \uc11c\ubbfc\uae08\uc735\uc9c4\ud765\uc6d0
+
+##############################################################
+# Mtcode Id info
+##############################################################
+Globals.mtCode_MT_GRADE_CODE = AA
+Globals.mtCode_MT_AREA_CODE = AC
+Globals.mtCode_MT_CL_CODE = CL
+Globals.mtCode_MT_CTYPE_CODE = DA
+Globals.mtCode_MT_CSEQ_STATUS_CODE = DE
+Globals.mtCode_MT_EDUINFO_CODE = ED
+Globals.mtCode_MT_FCLTS_CODE = FA
+Globals.mtCode_MT_FIELD_CODE = FD
+Globals.mtCode_MT_ACCESS_IP_CODE = IP
+Globals.mtCode_MT_CPOLL_CODE = JB
+Globals.mtCode_MT_TUTOR_CODE = JG
+Globals.mtCode_MT_EDTYPE_CODE = JI
+Globals.mtCode_MT_EMAIL_CODE = MA
+Globals.mtCode_MT_CANCEL_CODE = PC
+Globals.mtCode_MT_PWD_CLEAR_CODE = PW
+Globals.mtCode_MT_REPORT_TYPE_CODE = RP
+Globals.mtCode_MT_SC_CODE = SC
+Globals.mtCode_MT_CATE_CODE = SF
+Globals.mtCode_MT_STUDY_LIMIT_CODE = SL
+Globals.mtCode_MT_USUALQ_CODE = SU
+Globals.mtCode_MT_TUTOR_FILE_CODE = TF
+Globals.mtCode_MT_SMS_RESERVE_CODE  = UA
+Globals.mtCode_MT_MAIL_CODE = UB
+Globals.mtCode_MT_SMS_CODE = UC
+Globals.mtCode_MT_OFFICE_CODE = OF
+Globals.mtCode_MT_TUTOR_SE_CODE = TS
+Globals.mtCode_MT_PROVE_CODE = PR
+
+#
+Globals.mtCode_MT_ACDMCR_CODE = AM
+
+##############################################################
+# \ud2b9\uac15 \uacf5\ud1b5\ucf54\ub4dc
+##############################################################
+#\ud2b9\uac15 \uc2e0\uccad\uc0c1\ud0dc\ucf54\ub4dc
+Globals.mtCode_MT_LEC_STATUS_CODE = LE
+#\ud2b9\uac15 \ub300\uc0c1\ucf54\ub4dc
+Globals.mtCode_MT_LEC_TARGET_CODE = TG
+#\ud2b9\uac15 \ud76c\ub9dd\uc8fc\uc81c\ucf54\ub4dc
+Globals.mtCode_MT_LCTRE_CODE = HP
+#\ud2b9\uac15 \uc2e0\uccad\uacbd\ub85c\ucf54\ub4dc
+Globals.mtCode_MT_LEC_ROUTE_CODE = LR
+#\ud2b9\uac15 \uad50\uc721\uc2dc\uc124\uc815\ubcf4 \ucf54\ub4dc
+Globals.mtCode_MT_FCTRE_CODE = FA
+Globals.mtCode_MT_FCTRE_CODE1 = FA01
+Globals.mtCode_MT_FCTRE_CODE2 = FA02
+Globals.mtCode_MT_FCTRE_CODE3 = FA03
+Globals.mtCode_MT_FCTRE_CODE4 = FA04
+Globals.mtCode_MT_FCTRE_CODE5 = FA05
+Globals.mtCode_MT_FCTRE_CODE6 = FA06
+Globals.mtCode_MT_FCTRE_CODE7 = FA07
+
+# \uba54\uc77c \ubc1c\uc1a1\uc815\ubcf4
+Globals.mtCode_MT_MAIL_CODE = UB
+# SMS \ubc1c\uc1a1\uc815\ubcf4
+Globals.mtCode_MT_SMS_CODE = UC
+
+#SMS\uc608\uc57d\ubc1c\uc1a1\uc2dc\uac04\ucf54\ub4dc
+Globals.mtCode_MT_SMS_RESERVE_CODE = UA
+
+#\uacfc\uc815\uc0c1\ud0dc \uae30\ubcf8\uac12 (\uac1c\uc124)
+Globals.mtCode_MT_CSEQ_STATUS_CODE_OPEN = DEAA00
+Globals.mtCode_MT_CSEQ_STATUS_CODE_CLOSE = DEDA00
+
+#\uacfc\uc815\uc0c1\ud0dc \uae30\ubcf8\uac12 (\uc2e0\uccad)
+Globals.mtCode_MT_CSEQ_STATUS_CODE_APPLY = DEAB00
+
+#\uacfc\uc815\uc0c1\ud0dc \uae30\ubcf8\uac12 (\uc2e0\uccad\uc885\ub8cc)
+Globals.mtCode_MT_CSEQ_STATUS_CODE_APPLY_END = DEAC00
+
+#\uacfc\uc815\uc0c1\ud0dc \uae30\ubcf8\uac12 (\uc9c4\ud589)
+Globals.mtCode_MT_CSEQ_STATUS_CODE_STUDY = DEBA00
+
+# \uac15\uc758\ud615\ud0dc
+Globals.mtCode_MT_CTYPE_CODE_ONLINE = DAAA00
+Globals.mtCode_MT_CTYPE_CODE_OFFLINE = DAAA01
+Globals.mtCode_MT_CTYPE_CODE_TEST = DAAA03
+
+Globals.mtCode_MT_CPOLL_CODE_DES = JBAA00
+Globals.mtCode_MT_CPOLL_CODE_CHO = JBBA00
+
+
+# \uacfc\uc815
+Globals.mtCode_MT_PM_TYPE_COUR = SFCOUR
+
+Globals.mtCode_MT_SC_CODE_CYBER = CYBER
+Globals.mtCode_MT_SC_CODE_OFFLINE = OFFLINE
+Globals.mtCode_MT_SC_CODE_LECTURE = LECTURE
+
+Globals.mtCode_MT_SC_CODE_REF1 = LON
+Globals.mtCode_MT_SC_CODE_REF2 = ORGAN
+Globals.mtCode_MT_SC_CODE_REF3 = CNSMR
+
+Globals.mtCode_MT_SC_CODE_CPSEDU = SC0003
+Globals.mtCode_MT_SC_CODE_VISIT = SC0004
+Globals.mtCode_MT_SC_CODE_HNRT = SC0005
+Globals.mtCode_MT_SC_CODE_SCHOOL = SC0006
+Globals.mtCode_MT_SC_CODE_CPSEDU2 = SC0007
+
+Globals.mtCode_MT_STATUS_APPROVE = LE0001
+Globals.mtCode_MT_STATUS_ALLOTMENT = LE0002
+Globals.mtCode_MT_STATUS_TUTOR = LE0003
+Globals.mtCode_MT_STATUS_CONFIRM = LE0004
+Globals.mtCode_MT_STATUS_REFUSE = LE0005
+Globals.mtCode_MT_STATUS_END = LE0006
+
+#\uac15\uc0ac\uad6c\ubd84\ucf54\ub4dc
+Globals.mtCode_MT_TUTOR_CODE_IN = JGAA00
+Globals.mtCode_MT_TUTOR_CODE_OUT = JGAB00
+
+#\ucf58\ud150\uce20\ud559\uc2b5\uc0c1\ud0dc\ucf54\ub4dc
+Globals.mtCode_MT_PROG_STATUS_CODE_PRE = PS0001
+Globals.mtCode_MT_PROG_STATUS_CODE_ING = PS0002
+Globals.mtCode_MT_PROG_STATUS_CODE_END = PS0003
+
+##############################################################
+# Grade info
+##############################################################
+Globals.mtGradeTutorCode = AA5000
+Globals.mtGradeAdminCode = AA9999
+Globals.mtGradeUserCode  = AA1000
+Globals.mtGradeCompMngrCode  = AA2000
+
+##############################################################
+# Course info
+##############################################################
+Globals.courseAttendStdHour = 30
+Globals.courseTreeType_PACKAGE = 100
+Globals.courseTreeType_OBJECT= 200
+
+Globals.courseSeqOpenTypeAll = A
+Globals.courseSeqOpenTypeSelect = D
+##############################################################
+# bbs bcateno info
+##############################################################
+Globals.bbsBcateClassNotice = 1010
+Globals.bbsBcateClassData = 1020
+Globals.bbsBcateCourseNotice = 1010
+Globals.bbsBcateCourseData = 1020
+
+# \uac8c\uc2dc\ud310 \ubc88\ud638
+Globals.bbsBcateSiteNotice = 1
+Globals.bbsBcateSiteFaq = 2
+Globals.bbsBcateSiteGuide = 4
+Globals.bbsBcateSiteAnswer = 5
+Globals.bbsBcateSiteData = 6
+Globals.bbsBcateSiteNews = 7
+Globals.bbsBcateSiteEduDicary = 8
+Globals.bbsBcateSiteFnncDicary = 9
+Globals.bbsBcateAnnualSchedule = 10
+
+#\uac15\uc0ac\uacf5\uac04 \uac15\uc0ac\uacf5\uc9c0\uc0ac\ud56d \uac8c\uc2dc\ud310\ubc88\ud638
+Globals.bbsBcateTutorCmnty = 1030
+Globals.bbsBcateTutorNotice = 1034
+Globals.bbsBcateTutorData = 1035
+
+##############################################################
+# online CONTENTS info
+##############################################################
+Globals.onlineTreeType_CATEGORY = 100
+Globals.onlineTreeType_CONTENTS = 200
+
+##############################################################
+# CLASSDESK QUIZ TABLE
+##############################################################
+Globals.T_SETQUIZ       = LMS_LE_EXAM_SQUIZ
+Globals.T_BINDERQUIZ    = LMS_LE_EXAM_QUIZ
+Globals.T_BANK_QUIZ     = LMS_ED_EXAM_QUIZ
+
+# \uc870\ud68c,\ucc98\ub9ac \ub85c\uadf8 \uc2dc\uc2a4\ud15c\uad6c\ubd84
+Globals.MBR_TRANS_SYS_GB_ACADEMY = WWW
+Globals.MBR_TRANS_SYS_GB_ADMIN = ADM
+
+# \uc870\ud68c,\ucc98\ub9ac \uc5c5\ubb34 \uad6c\ubd84
+Globals.MBR_TRANS_GB_CREATE = C
+Globals.MBR_TRANS_GB_UPDATE = U
+Globals.MBR_TRANS_GB_DELETE = D
+Globals.MBR_TRANS_GB_SELECT = R
+Globals.MBR_TRANS_GB_PRINT = P
+
+# \uc778\uc99d \uc5c5\ubb34\uad6c\ubd84
+Globals.MBR_LOGIN_GB_SUCESS = S
+Globals.MBR_LOGIN_GB_FAIL = F
+Globals.MBR_LOGIN_GB_LOGOUT = O
+
+# \uba54\uc77c \ubc1c\uc1a1\uad00\ub828
+Globals.mtCode_MT_MAIL_SENDNAME = UB0001
+Globals.mtCode_MT_MAIL_SENDADDR = UB0002
+
+# \uc790\uc8fc\ubb3b\ub294\uc9c8\ubb38 \ubd84\ub958 \ucf54\ub4dc
+Globals.mtCode_Faq_Cate01 = SF0001
+Globals.mtCode_Faq_Cate02 =	SF0002
+Globals.mtCode_Faq_Cate03 = SF0003
+Globals.mtCode_Faq_Cate04 = SF0004
+Globals.mtCode_Faq_Cate05 = SF0005
+
+# \uba54\uc77c \ubc1c\uc1a1\uad00\ub828
+Globals.mtCode_MT_LEC_CODE1 = LR0001
+Globals.mtCode_MT_LEC_CODE2 = LR0002
+
+# \uad50\uc721\ub300\uc0c1\ucf54\ub4dc
+Globals.mtCode_MT_LEC_TARGET_CODE1 = TG0001
+Globals.mtCode_MT_LEC_TARGET_CODE2 = TG0002
+Globals.mtCode_MT_LEC_TARGET_CODE3 = TG0003
+Globals.mtCode_MT_LEC_TARGET_CODE4 = TG0004
+Globals.mtCode_MT_LEC_TARGET_CODE5 = TG0005
+Globals.mtCode_MT_LEC_TARGET_CODE6 = TG0006
+Globals.mtCode_MT_LEC_TARGET_CODE7 = TG0007
+
+# \uad50\uc721\ud76c\ub9dd\uc8fc\uc81c\ucf54\ub4dc
+Globals.mtCode_MT_LCTRE_CODE1 = HP0001
+Globals.mtCode_MT_LCTRE_CODE2 = HP0002
+Globals.mtCode_MT_LCTRE_CODE3 = HP0003
+Globals.mtCode_MT_LCTRE_CODE4 = HP0004
+Globals.mtCode_MT_LCTRE_CODE5 = HP0005
+Globals.mtCode_MT_LCTRE_CODE6 = HP0006
+Globals.mtCode_MT_LCTRE_CODE7 = HP0007
+Globals.mtCode_MT_LCTRE_CODE8 = HP0008
+Globals.mtCode_MT_LCTRE_CODE9 = HP0009
+Globals.mtCode_MT_LCTRE_CODE10 = HP0010
+
+##############################################################
+#\uc678\ubd80 API
+##############################################################
+# \uc0c8\uc6b0\ud3b8\ubc88\ud638(5\uc790\ub9ac) \uc801\uc6a9
+Globals.newZipcodeUrl=http://www.juso.go.kr/addrlink/addrLinkApi.do
+Globals.confmKey=U01TX0FVVEgyMDE1MDgyODE1NTAzMA== 
+
+Globals.lotNumberAdressUrl=http://openapi.epost.go.kr/postal/retrieveLotNumberAdressService/retrieveLotNumberAdressService/getDetailList
+Globals.newAdressUrl=http://openapi.epost.go.kr/postal/retrieveNewAdressService/retrieveNewAdressService/getNewAddressList
+Globals.serviceKey=oL/JptJbvhZfIq++KZ3fZ/xMjLxOmnCXgLdAaKKdyLXsZttHpHSk4dqIxC0gBSRHqbb/WFBDcENab3hluk2T7A==
+
+##############################################################
+#\ud398\uc774\uc9c0 \uc0c1\ud0dc\uac12
+##############################################################
+Globals.PAGE_MODE_LIST = list
+Globals.PAGE_MODE_REG = reg
+Globals.PAGE_MODE_MOD = mod
+Globals.PAGE_MODE_VIEW = view
+Globals.PAGE_MODE_DEL = del
+Globals.PAGE_MODE_RE_REG = reReg
+Globals.PAGE_MODE_RE_MOD = reMod
+Globals.PAGE_MODE_RE_DEL = reDel
+
+#\ud68c\uc6d0\uad8c\ud55c\ucf54\ub4dc 
+Globals.mtCode_MT_GRADE_CODE_ENTRPRS = AA2000
+Globals.mtCode_MT_GRADE_CODE_MNGR = AA9999
+Globals.mtCode_MT_GRADE_CODE_INSTRCTR = AA5000
+Globals.mtCode_MT_GRADE_CODE_EMPLYR =  AA1000
+ 
+# \ud30c\uc77c \uc5c5\ub85c\ub4dc \uacbd\ub85c(\uacbd\ub85c \uc124\uc815\uc740 \ubc18\ub4dc\uc2dc \uc808\ub300\uacbd\ub85c\ub97c \uc0ac\uc6a9\ud574\uc57c\ud568, \uacbd\ub85c \ub4a4\uc5d0 /\ub97c \ubd99\uc5ec \uc8fc\uc5b4\uc57c\ud568.)
+Globals.fileStorePath =  /app/lms/edu-data/upload
+
+# \ud30c\uc77c \ub3d9\uae30\ud654 \ucef4\ud3ec\ub10c\ud2b8\uc5d0\uc11c \uc0ac\uc6a9\ud560 \ud30c\uc77c \uc5c5\ub85c\ub4dc \uacbd\ub85c(\uacbd\ub85c \uc124\uc815\uc740 \ubc18\ub4dc\uc2dc \uc808\ub300\uacbd\ub85c\ub97c \uc0ac\uc6a9\ud574\uc57c\ud568, \uacbd\ub85c \ub4a4\uc5d0 /\ub97c \ubd99\uc5ec \uc8fc\uc5b4\uc57c\ud568.)
+Globals.SynchrnServerPath = /app/lms/edu-data/upload/Synch/
+ 

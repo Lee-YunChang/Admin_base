@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminMainMapper">
+
+    <!-- 20161109 수정 : 공지사항 리스트 -->
+    <select id="getBoardList" parameterType="dmap" resultType="emap">
+         SELECT BBSNO,
+               TO_CHAR(WDATE,'yyyy-mm-dd') as WDATE,
+               CASE WHEN LENGTH(TITLE) > 151 THEN SUBSTR(TITLE,1,150)||'..' ELSE TITLE END AS TITLE,
+               ANYN
+          FROM (
+              SELECT BBSNO,
+                      WDATE,
+                      TITLE,
+                      ANYN
+                FROM TB_ED_BBS
+                WHERE OPEN_AT = 'Y'
+                AND BCATENO IN (SELECT BCATENO
+                        FROM TB_ED_BBS_CATEGORY
+                       WHERE BCATENO = #{bcateno} )
+                 ORDER BY GRPNO DESC, BBSNO ASC
+           ) a
+         WHERE ROWNUM <![CDATA[ < ]]> 6
+    </select>
+
+    <!-- 20161109 수정 : 팝업 리스트 -->
+    <select id="getPopupList" parameterType="dmap" resultType="emap">
+        SELECT AA.*
+        FROM (
+               SELECT
+                    <!-- ROW_NUMBER() OVER (ORDER BY POP_NO desc) AS RNUM -->
+                    ROWNUM AS RNUM
+                    , POP_NO
+                    , CASE WHEN LENGTH(POP_TITLE) > 151 THEN SUBSTR(POP_TITLE,1,150)||'..' ELSE POP_TITLE END AS POP_TITLE
+                    , POP_CONTENT
+                    , WIDTH_SIZE
+                    , HEIGHT_SIZE
+                    , START_DATE
+                    , END_DATE
+                    , START_HOUR
+                    , END_HOUR
+                    , LOC_TOP_PX
+                    , LOC_LEF_PX
+                    , USE_AT
+                    , TO_CHAR(WRITE_DATE, 'YYYY-MM-DD')AS WRITE_DATE
+                    , TO_CHAR(WRITE_DATE, 'HH:MI:SS') AS WRITE_TIME
+               FROM TB_SY_POP
+               WHERE 1=1
+               ORDER BY POP_NO DESC
+         ) AA
+         WHERE RNUM <![CDATA[ < ]]> 6
+    </select>
+
+    <!-- 20161109 수정 : 가입자 정보 -->
+    <select id="getJoinInfo" parameterType="dmap" resultType="emap">
+    	SELECT
+            AA.*
+         , ( CASE WHEN CNT > YESTERDAY_CNT THEN 'UP' WHEN CNT <![CDATA[ < ]]> YESTERDAY_CNT THEN 'DOWN' ELSE 'SAME' END ) AS COMPARE_INFO
+        FROM(
+            SELECT
+                COUNT(*) AS CNT
+                ,( SELECT COUNT(*)
+                    FROM VW_TB_USERS
+                    WHERE 1=1
+                    AND TO_CHAR(RGSDE,'YYYYMMDD')  = TO_CHAR(SYSDATE-1 ,'YYYYMMDD')
+                 ) AS YESTERDAY_CNT
+            FROM VW_TB_USERS
+            WHERE TO_CHAR(RGSDE,'YYYYMMDD')  = TO_CHAR(SYSDATE ,'YYYYMMDD')
+            GROUP BY TO_CHAR(RGSDE,'YYYYMMDD')  
+        ) AA
+    </select>
+
+    <!-- 20161109 수정 : 방문자 정보 -->
+    <select id="getAccessTodayInfo" parameterType="dmap" resultType="emap">
+        SELECT AA.*
+            , ( CASE WHEN ACCES_CNT > YESTERDAY_CNT THEN 'UP' WHEN ACCES_CNT <![CDATA[ < ]]> YESTERDAY_CNT THEN 'DOWN' ELSE 'SAME' END ) AS COMPARE_INFO
+        FROM (
+            SELECT
+                ACCES_DAY, ACCES_CNT
+                , (SELECT ACCES_CNT
+                    FROM TB_SY_ACCES_STATS
+                    WHERE SYS_GB = #{sysGb}
+                    AND ACCES_URL = #{accessUrl}
+                       AND ACCES_YEAR = TO_CHAR(SYSDATE, 'yyyy')
+                       AND ACCES_MONTH = TO_NUMBER(TO_CHAR(SYSDATE, 'mm'))
+                       AND ACCES_DAY = TO_NUMBER(TO_CHAR(SYSDATE, 'dd'))-1
+                ) YESTERDAY_CNT
+             FROM TB_SY_ACCES_STATS
+             WHERE SYS_GB = #{sysGb}
+             AND ACCES_URL = #{accessUrl}
+             AND ACCES_YEAR = TO_CHAR(SYSDATE, 'yyyy')
+             AND ACCES_MONTH = TO_NUMBER(TO_CHAR(SYSDATE, 'mm'))
+             AND ACCES_DAY = TO_NUMBER(TO_CHAR(SYSDATE, 'dd'))
+         ) AA
+    </select>
+
+    <!-- 20161109 수정 : 업체 승인대기 -->
+    <select id="getCompanyListCount" resultType="Integer" parameterType="dmap">
+        SELECT COUNT(*) total
+        FROM TB_CT_COMPANY
+        WHERE COMNAME IS NOT NULL
+        AND (STATUS_GB = 'S' OR STATUS_GB IS NULL)
+    </select>
+
+    <!-- 20161109 수정 : 현재 수강자수 -->
+    <select id="getStudyUserCount" resultType="Integer" parameterType="dmap">
+        SELECT COUNT(*)
+        FROM TB_LE_COURSE_USER
+        WHERE USEYN = 'Y'
+        AND TO_CHAR(SYSDATE,'YYYYMMDD')BETWEEN '20170601' AND TO_CHAR(SYSDATE,'YYYYMMDD')
+    </select>
+
+    <!-- 20161109 수정 : 금월수료자수 -->
+    <select id="getCourseIsPassCount" resultType="Integer" parameterType="dmap">
+        SELECT COUNT(*)
+        FROM TB_LE_COURSE_USER
+        WHERE ISPASS = 'Y'
+        AND USEYN = 'Y'
+        AND TO_CHAR(COMPDATE,'YYYYMM') =  TO_CHAR(SYSDATE,'YYYYMM')
+    </select>
+
+    <!-- 20161109 수정 : 수강신청현황(집합)  -->
+    <!-- <select id="getOfflineCourseList" parameterType="dmap" resultType="emap">
+        SELECT AA.*
+        FROM (
+            SELECT
+                 T1.*
+                , B.CSEQNO
+                , B.SEQ_TITLE
+                , TO_CHAR(B.APPLY_SDATE, 'YYYY-MM-DD') APPLY_SDATE
+                , TO_CHAR(B.APPLY_EDATE, 'YYYY-MM-DD') APPLY_EDATE
+                , TO_CHAR(DECODE(B.OPENTYPE, 'A', B.STUDY_SDATE, B.STUDY_SDATE), 'YYYY-MM-DD') AS STUDY_SDATE
+                , TO_CHAR(DECODE(B.OPENTYPE, 'A', B.STUDY_EDATE, B.STUDY_EDATE), 'YYYY-MM-DD') AS STUDY_EDATE
+                , (SELECT COUNT(*) FROM TB_LE_COURSE_USER C
+                    WHERE USEYN = 'S'
+                    AND C.CSEQNO = B.CSEQNO
+                ) TOT_APPLY_USER
+                , (SELECT COUNT(*) FROM TB_LE_COURSE_USER C
+                    WHERE (USEYN = 'Y' OR USEYN = 'S' )
+                    AND C.CSEQNO = B.CSEQNO
+                ) TOT_STUDY_USER
+                , (SELECT COUNT(*) FROM TB_LE_COURSE_USER C
+                    WHERE USEYN = 'Y' AND ISPASS = 'Y' AND COMPCODE IS NOT NULL
+                    AND C.CSEQNO = B.CSEQNO
+                ) TOT_PASS_USER
+                , B.OPENTYPE
+                , NVL(B.FIX_CNT,0) AS FIX_CNT
+                , ROW_NUMBER() OVER(ORDER BY WDATE DESC) AS RNUM
+                , B.WDATE
+            FROM
+
+                (SELECT
+                  COURSENO
+                  , MT_CTYPE_CODE
+                  , (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB T3 WHERE T3.MT_SUB_CODE = MT_CTYPE_CODE) AS MT_CTYPE_NAME
+                  , COURSETITLE
+                  FROM TB_ED_COURSE
+                  WHERE USEYN = 'Y'
+                  AND MT_CTYPE_CODE = #{mtCtypeCode}
+                ) T1 , TB_ED_COURSE_SEQ B
+                WHERE T1.COURSENO = B.COURSENO
+        ) AA
+        WHERE RNUM <![CDATA[ < ]]> 6
+    </select> -->
+
+    <!-- 20161109 수정 : 수강신청현황(온라인) -->
+   <!--  <select id="getOnlineCourseList" parameterType="dmap" resultType="emap">
+        SELECT AA.*
+        FROM (
+            SELECT
+                 T1.*
+                , B.CSEQNO
+                , B.SEQ_TITLE
+                , (SELECT COUNT(*) FROM TB_LE_COURSE_USER C
+                    WHERE USEYN = 'Y'
+                    AND C.CSEQNO = B.CSEQNO
+                ) TOT_STUDY_USER
+                , (SELECT COUNT(*) FROM TB_LE_COURSE_USER C
+                    WHERE USEYN = 'Y' AND ISPASS = 'Y' AND COMPCODE IS NOT NULL
+                    AND C.CSEQNO = B.CSEQNO
+                ) TOT_PASS_USER
+                , B.OPENTYPE
+                , TO_CHAR(STUDY_SDATE, 'YYYY-MM-DD')AS STUDY_SDATE
+                , TO_CHAR(STUDY_EDATE, 'YYYY-MM-DD')AS STUDY_EDATE
+                , ROW_NUMBER() OVER(ORDER BY WDATE DESC) AS RNUM
+                , B.WDATE
+            FROM
+
+                (SELECT
+                  COURSENO
+                  , MT_CTYPE_CODE
+                  , (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB T3 WHERE T3.MT_SUB_CODE = MT_CTYPE_CODE) AS MT_CTYPE_NAME
+                  , COURSETITLE
+                  FROM TB_ED_COURSE
+                  WHERE USEYN = 'Y'
+                  AND MT_CTYPE_CODE = #{mtCtypeCode}
+                ) T1 , TB_ED_COURSE_SEQ B
+                WHERE T1.COURSENO = B.COURSENO
+        ) AA
+        WHERE RNUM <![CDATA[ < ]]> 6
+    </select> -->
+
+    <!-- 20161109 수정 : 접속자 카운트 월별현황 -->
+    <select id="getAccessCountList" parameterType="dmap" resultType="emap">
+        SELECT
+             <!-- ROWNUM AS RNUM
+             ,   -->A.SDAY
+              , SUM(NVL(ACCES_CNT,0))  ACCES_CNT
+        FROM (
+                SELECT TO_CHAR(SYSDATE, 'YYYY.MM.dd') AS SDAY FROM DUAL
+                UNION
+                SELECT TO_CHAR(SYSDATE-1, 'YYYY.MM.dd') AS SDAY FROM DUAL
+                UNION
+                SELECT TO_CHAR(SYSDATE-2, 'YYYY.MM.dd') AS SDAY FROM DUAL
+                UNION
+                SELECT TO_CHAR(SYSDATE-3, 'YYYY.MM.dd') AS SDAY FROM DUAL
+                UNION
+                SELECT TO_CHAR(SYSDATE-4, 'YYYY.MM.dd') AS SDAY FROM DUAL
+                UNION
+                SELECT TO_CHAR(SYSDATE-5, 'YYYY.MM.dd') AS SDAY FROM DUAL
+          ) A
+       LEFT OUTER JOIN (
+            SELECT
+                 SUM(ACCES_CNT) ACCES_CNT
+                , ACCES_YEAR || '.' || LPAD(ACCES_MONTH,2,'0')|| '.' || LPAD(ACCES_DAY,2,'0') AS ACCDAY
+            FROM TB_SY_ACCES_STATS
+            WHERE SYS_GB = #{sysGb}
+            AND ACCES_URL = #{accessUrl}
+            GROUP BY ACCES_YEAR || '.' || LPAD(ACCES_MONTH,2,'0')|| '.' || LPAD(ACCES_DAY,2,'0')
+        ) B ON SDAY =  B.ACCDAY
+        WHERE 1=1
+        GROUP BY SDAY
+        ORDER BY SDAY
+    </select>
+
+    <!-- 20161109 수정 : 특강목록 -->
+    <select id="getLectureList" parameterType="dmap" resultType="emap">
+        SELECT AA.*
+        FROM (
+               SELECT
+                    A.SLNO
+                    , A.MT_AREA_CODE
+                    , A.MT_SC_CODE
+                  	, (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB T3 WHERE T3.MT_SUB_CODE = MT_SC_CODE) AS MT_SC_NAME
+                    , A.TITLE
+                    , A.EDU_TIME
+                    , A.PERSON_CNT
+                    , A.APPLY_ORGAN
+                    , A.APPLY_ORGAN_NM
+                    , A.LEC_PAY
+                    , A.APPLY_NO
+                    , TO_CHAR(A.REGDATE,'yyyy-mm-dd') AS REGDATE
+                    , TO_CHAR(A.EDU_SDATE,'yyyy-mm-dd') AS EDU_SDATE
+                    , TO_CHAR(A.EDU_EDATE,'yyyy-mm-dd') AS EDU_EDATE
+                    , B.EDU_DATE
+                    , B.MT_LEC_STATUS_CODE
+                    , ROW_NUMBER() OVER(ORDER BY A.REGDATE DESC, A.SLNO DESC, B.SLTNO DESC) AS RNUM
+                FROM TB_ED_LECTURE A, TB_ED_LECTURE_TIME B
+                WHERE A.USEYN = 'Y'
+                AND A.SLNO = B.SLNO(+)
+        ) AA
+        WHERE RNUM <![CDATA[ < ]]> 6
+    </select>
+    
+    
+    <!-- 수강현황 -->
+    <select id="getCourseList" parameterType="dmap" resultType="emap">
+        SELECT 
+        	SEQ_TITLE
+        	, OPENTYPE
+        	, EDUDAY
+        	, (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = AA.MT_CTYPE_CODE ) AS MT_CTYPE_NAME
+        	, TO_CHAR(APPLY_SDATE, 'YYYY-MM-DD') APPLY_SDATE
+            , TO_CHAR(APPLY_EDATE, 'YYYY-MM-DD') APPLY_EDATE
+            , TO_CHAR(DECODE(OPENTYPE, 'A', STUDY_SDATE, STUDY_SDATE), 'YYYY-MM-DD') AS STUDY_SDATE
+            , TO_CHAR(DECODE(OPENTYPE, 'A', STUDY_EDATE, STUDY_EDATE), 'YYYY-MM-DD') AS STUDY_EDATE
+            , (SELECT COUNT(*) FROM TB_LE_COURSE_USER C
+                    WHERE USEYN != 'N'
+                    AND C.CSEQNO = AA.CSEQNO
+               ) TOT_STUDY_USER
+            , FIX_CNT
+        FROM (
+               SELECT 
+				    ROW_NUMBER() OVER(ORDER BY WDATE DESC) AS RNUM
+				    , (SELECT MT_CTYPE_CODE FROM TB_ED_COURSE WHERE COURSENO = A.COURSENO) MT_CTYPE_CODE
+				    , A.* 
+				FROM TB_ED_COURSE_SEQ A
+				WHERE COURSENO IN (SELECT COURSENO FROM TB_ED_COURSE WHERE MT_SC_CODE IN( 
+						SELECT MT_SUB_CODE FROM TB_CD_MT_SUB WHERE MT_CODE = 'SC' AND REF1 = #{ref1})
+					)
+        ) AA
+        WHERE RNUM <![CDATA[ < ]]> 6
+    </select>
+    
+    <!-- 최근 6개월 수료현황 -->
+    <select id="getSuryoCountList" parameterType="dmap" resultType="emap">
+        SELECT 
+		    AA.MONTH
+		    , SUM(SURYO_CNT) SURYO_CNT
+		FROM (        
+		        WITH TBL(MONTH) AS (
+		            SELECT TO_CHAR(SYSDATE, 'YYYY.MM') FROM DUAL
+		            UNION
+		            SELECT TO_CHAR(ADD_MONTHS(SYSDATE,-1), 'YYYY.MM') FROM DUAL
+		            UNION
+		            SELECT TO_CHAR(ADD_MONTHS(SYSDATE,-2), 'YYYY.MM') FROM DUAL
+		            UNION
+		            SELECT TO_CHAR(ADD_MONTHS(SYSDATE,-3), 'YYYY.MM') FROM DUAL
+		            UNION
+		            SELECT TO_CHAR(ADD_MONTHS(SYSDATE,-4), 'YYYY.MM') FROM DUAL
+		            UNION
+		            SELECT TO_CHAR(ADD_MONTHS(SYSDATE,-5), 'YYYY.MM') FROM DUAL
+		        )
+		        SELECT
+		            A.MONTH  
+		            , NVL(D.SURYO_CNT,0)  SURYO_CNT
+		            , ( SELECT REF1 FROM TB_CD_MT_SUB WHERE MT_CODE = 'SC' AND REF1 = #{ref1} GROUP BY REF1) REF1
+		        FROM TBL A
+		        LEFT OUTER JOIN TB_ED_COURSE B ON 1=1
+		        LEFT OUTER JOIN TB_ED_COURSE_SEQ C ON B.COURSENO = C.COURSENO
+		        LEFT OUTER JOIN (
+		            SELECT
+		                SUM(CASE WHEN ISPASS = 'Y' THEN 1 ELSE 0 END) AS SURYO_CNT
+		                , CSEQNO
+		                , TO_CHAR(COMPDATE, 'YYYY.MM') AS COMPDATE
+		            FROM TB_LE_COURSE_USER
+		            WHERE ISPASS = 'Y'
+		            AND COMPDATE IS NOT NULL
+		            AND TO_CHAR(COMPDATE, 'YYYYMM') >= TO_CHAR(ADD_MONTHS(SYSDATE,-5), 'YYYYMM')
+		            GROUP BY TO_CHAR(COMPDATE, 'YYYY.MM'), CSEQNO
+		        ) D ON A.MONTH = D.COMPDATE AND D.CSEQNO = C.CSEQNO AND D.COMPDATE IS NOT NULL
+		        WHERE 1=1
+		        AND B.MT_SC_CODE IN ( SELECT MT_SUB_CODE FROM TB_CD_MT_SUB WHERE MT_CODE = 'SC' AND REF1 = #{ref1})
+		) AA
+		 GROUP BY MONTH, REF1
+		 ORDER BY MONTH, REF1
+		    
+	</select>
+</mapper>

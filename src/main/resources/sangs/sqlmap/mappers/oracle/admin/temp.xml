@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminTempMapper">
+
+
+    <!-- list -->
+    <select id="getTempList" parameterType="dmap" resultType="emap">
+        SELECT SYSDATE DUAL
+    </select>
+
+    <!-- info -->
+    <select id="getTempInfo" parameterType="dmap" resultType="emap">
+        SELECT SYSDATE DUAL
+    </select>
+
+    <!-- insert -->
+    <insert id="insertTempInfo" parameterType="dmap">
+
+        INSERT TEMP INTO (IDX, TEMP) VALUES (#{IDX}, #{TEMP})
+
+    </insert>
+
+    <!-- update -->
+    <update id="updateTempInfo" parameterType="dmap">
+
+        SELECT SYSDATE DUAL
+        WHERE IDX = #{idx}
+        <if test="useYn != null and useYn != ''">
+            AND USEYN = #{useYn}
+        </if>
+
+    </update>
+    <!-- delete -->
+    <delete id="deleteTempInfo" parameterType="dmap">
+        DELELTE FROM DUAL
+        <if test="useYn != null and useYn != ''">
+            AND USEYN = #{useYn}
+        </if>
+    </delete>
+
+</mapper>

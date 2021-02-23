@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminMenuMngrMapper">
+
+
+    <!-- 루트 메뉴목록조회 -->
+    <select id="getRootMenuList" parameterType="dmap" resultType="emap">
+        SELECT
+            SYS_GB
+            , MENU_CODE
+            , MENU_NAME
+            , P_MENU_CODE
+            , LINK
+            , MENU_DIV
+            , ORDR
+            , USE_STATE
+            , LINKTARGET
+            , (SELECT COUNT(*) FROM TB_CD_MENU WHERE P_MENU_CODE = T1.MENU_CODE) SUB_CNT
+        FROM TB_CD_MENU T1 
+        WHERE SYS_GB = #{sysGb} AND MENU_DIV = 1
+        <if test='useState != null and useState != "T"'>
+            AND USE_STATE = #{useState}
+        </if>
+        ORDER BY ORDR
+    </select>
+
+    <!-- 서브 메뉴목록조회 -->
+    <select id="getSubMenuList" parameterType="dmap" resultType="emap">
+        SELECT
+              SYS_GB
+            , MENU_CODE
+            , MENU_NAME
+            , P_MENU_CODE
+            , LINK
+            , MENU_DIV
+            , ORDR
+            , USE_STATE
+            , LINKTARGET
+            , (SELECT COUNT(*) FROM TB_CD_MENU WHERE P_MENU_CODE = T1.MENU_CODE) SUB_CNT
+        FROM TB_CD_MENU T1 
+		WHERE SYS_GB = #{sysGb} AND P_MENU_CODE LIKE #{rootMenuCode}||'%' AND MENU_DIV > 1
+        <if test='useState != null and useState != "T"'>
+                AND USE_STATE = #{useState}
+        </if>
+        ORDER BY ORDR
+    </select>
+
+    <!-- 메뉴정보 조회 -->
+    <select id="getMenuInfo" parameterType="dmap" resultType="emap">
+        SELECT
+            SYS_GB
+            , MENU_CODE
+            , MENU_NAME
+            , P_MENU_CODE
+            , LINK
+            , MENU_DIV
+            , ORDR
+            , USE_STATE
+            , LINKTARGET
+        FROM TB_CD_MENU WHERE MENU_CODE = #{menuCode}
+    </select>
+
+    <!-- 상위 메뉴정보 조회 -->
+    <select id="getPMenuInfo" parameterType="dmap" resultType="emap">
+         SELECT
+            MENU_NAME
+            , MENU_DIV
+            , (SELECT MAX(ORDR) MAX_ORDR FROM TB_CD_MENU WHERE P_MENU_CODE = #{pMenuCode}) AS MAX_ORDR
+        FROM TB_CD_MENU WHERE MENU_CODE = #{pMenuCode}
+    </select>
+
+    <!-- 메뉴 등록 -->
+    <insert id="insertMenuInfo" parameterType="dmap">
+        INSERT INTO TB_CD_MENU (
+            SYS_GB
+            , MENU_CODE
+            , MENU_NAME
+            , P_MENU_CODE
+            , LINK
+            , MENU_DIV
+            , ORDR
+            , USE_STATE
+            , LINKTARGET
+        ) VALUES (
+              #{sysGb}
+            , #{menuCode}
+            , #{menuName}
+            , #{pMenuCode}
+            , #{link}
+            , #{menuDiv}
+            , #{ordr}
+            , #{useState}
+            , #{linkTarget}
+        )
+
+    </insert>
+
+    <!-- 메뉴 수정 -->
+    <update id="updateMenuInfo" parameterType="dmap">
+        UPDATE TB_CD_MENU SET
+              MENU_CODE = #{menuCode}
+            , MENU_NAME = #{menuName}
+            , LINK = #{link}
+            , MENU_DIV = #{menuDiv}
+            , ORDR = #{ordr}
+            , USE_STATE = #{useState}
+            , LINKTARGET = #{linkTarget}
+        WHERE MENU_CODE = #{menuCode}
+    </update>
+
+    <!-- 메뉴 삭제 -->
+    <delete id="deleteMenuInfo" parameterType="dmap">
+        DELETE FROM TB_CD_MENU WHERE MENU_CODE = #{menuCode}
+    </delete>
+
+    <!-- [메뉴권한]  대메뉴목록조회 -->
+    <select id="getGradeRootMenuList"  resultType="emap" parameterType="dmap">
+        SELECT
+            T1.SYS_GB
+            , T1.MENU_CODE
+            , T1.MENU_NAME
+            , T1.MENU_DIV
+            , NVL(T2.USEYN, 'N') USEYN
+        FROM
+          (SELECT SYS_GB
+              , MENU_CODE
+              , MENU_NAME
+              , MENU_DIV
+          FROM TB_CD_MENU T1 WHERE SYS_GB = #{sysGb} AND MENU_DIV = 1 AND USE_STATE = 'Y' ORDER BY ORDR) T1
+          ,
+          (SELECT GRADE_CODE
+              , SYS_GB
+              , MENU_CODE
+              , USEYN
+          FROM TB_CD_MENU_GRADE WHERE GRADE_CODE = #{gradeCode} AND SYS_GB = #{sysGb}) T2
+        WHERE
+            T1.SYS_GB = T2.SYS_GB (+) AND T1.MENU_CODE = T2.MENU_CODE (+)
+    </select>
+
+    <!-- [메뉴권한]  서버메뉴목록조회 -->
+    <select id="getGradeSubMenuList"  resultType="emap" parameterType="dmap">
+        SELECT
+              T1.SYS_GB
+            , T1.MENU_CODE
+            , T1.MENU_NAME
+            , T1.MENU_DIV
+            , NVL(T2.USEYN, 'N') USEYN
+        FROM
+          (SELECT SYS_GB
+              , MENU_CODE
+              , MENU_NAME
+              , MENU_DIV
+          FROM TB_CD_MENU T1 WHERE SYS_GB = #{sysGb} AND P_MENU_CODE LIKE '%'||#{rootMenuCode}||'%' AND MENU_DIV > 1 AND USE_STATE = 'Y' ORDER BY ORDR) T1
+          ,
+          (SELECT GRADE_CODE
+              , SYS_GB
+              , MENU_CODE
+              , USEYN
+          FROM TB_CD_MENU_GRADE WHERE GRADE_CODE = #{gradeCode} AND SYS_GB = #{sysGb}) T2
+        WHERE
+            T1.SYS_GB = T2.SYS_GB (+) AND T1.MENU_CODE = T2.MENU_CODE (+)
+    </select>
+
+    <!-- [메뉴권한] 사용자 권한목록조회 : 권한등록관련 사용용도 -->
+    <select id="getGradeList"  resultType="emap" parameterType="dmap">
+        SELECT
+               MT_SUB_CODE
+               , MT_SUB_NAME
+        FROM TB_CD_MT_SUB WHERE MT_CODE = 'AA' AND USEYN = 'Y'
+    </select>
+
+    <!-- [메뉴권한]  메뉴코드 저정여부 확인 -->
+    <select id="getGradeMenuCount"  resultType="int" parameterType="dmap">
+        SELECT
+             COUNT(*)
+        FROM
+          TB_CD_MENU_GRADE
+        WHERE
+            GRADE_CODE = #{gradeCode} AND SYS_GB = #{sysGb} AND MENU_CODE = #{menuCode}
+    </select>
+
+    <!-- [메뉴권한]  등록  -->
+    <insert id="insertGradeMenuInfo" parameterType="dmap">
+        INSERT INTO TB_CD_MENU_GRADE
+            (GRADE_CODE
+                , SYS_GB
+                , MENU_CODE
+                , USEYN)
+            VALUES
+                (#{gradeCode}
+                , #{sysGb}
+                , #{menuCode}
+                , #{useYn})
+    </insert>
+
+    <!-- [메뉴권한]  수정  -->
+    <update id="updateGradeMenuInfo" parameterType="dmap">
+        UPDATE TB_CD_MENU_GRADE SET
+            USEYN = #{useYn}
+        WHERE
+            GRADE_CODE = #{gradeCode} AND SYS_GB = #{sysGb} AND MENU_CODE = #{menuCode}
+    </update>
+
+</mapper>

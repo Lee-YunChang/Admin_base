@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 클래스데스크 > 학생 > 성적관련 -->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskUserResultMapper">
+	<select id="getLeCourseUserResultInfo" parameterType="dmap" resultType="emap">
+		 SELECT * FROM 
+		     (	SELECT  
+		             NVL( TO_CHAR(  AVG( PROGRESS_VAL) , 'FM9990.00') , 0)  AVG_PROGRESS_VAL ,        
+		           NVL(  TO_CHAR(  AVG( EXAM_MT_VAL) , 'FM9990.00'), 0)   AVG_EXAM_MT_VAL ,    
+		            NVL( TO_CHAR(  AVG( EXAM_FINAL_VAL) , 'FM9990.00'), 0)  AVG_EXAM_FINAL_VAL ,    
+		           NVL(   TO_CHAR(  AVG(REPORT_VAL) , 'FM9990.00'), 0)   AVG_REPORT_VAL ,
+		            NVL( TO_CHAR(  AVG( ATTEND_VAL) , 'FM9990.00') , 0)  AVG_ATTEND_VAL ,    
+		           NVL( TO_CHAR(  AVG( FINAL_VAL) , 'FM9990.00'), 0)   AVG_FINAL_VAL , 
+		           ( MAX(  EXAM_MT_VAL) + MAX(  EXAM_FINAL_VAL)) MAX_EXAM_VAL,
+    		           MAX(FINAL_VAL) MAX_FINAL_VAL
+ 		       FROM 
+		            TB_LE_COURSE_USER   
+		       WHERE   
+		            CSEQNO =#{SES_CSEQNO}
+		      ) X,                 
+		     (	SELECT 
+		           NVL(  EVAL_PROGRESS, 0)             EVAL_PROGRESS ,
+		          NVL(  EVAL_EXAM_MT, 0)             EVAL_EXAM_MT,
+		            NVL(  EVAL_EXAM_FINAL, 0)           EVAL_EXAM_FINAL,
+		            NVL(  EVAL_REPORT, 0)           EVAL_REPORT,
+		           NVL(  EVAL_ATTEND, 0)            EVAL_ATTEND 
+		        FROM 
+		            TB_ED_COURSE_SEQ
+		        WHERE   
+		            CSEQNO = #{SES_CSEQNO}
+		     )Y,
+		    (	SELECT 
+			          NVL( TO_CHAR( A.PROGRESS_VAL, 'FM9990.00') , 0)    PROGRESS_VAL,
+                  NVL( TO_CHAR( A.EXAM_MT_VAL, 'FM9990.00') , 0)  EXAM_MT_VAL,
+                   NVL( TO_CHAR( A.EXAM_FINAL_VAL, 'FM9990.00') , 0)  EXAM_FINAL_VAL,
+                   NVL( TO_CHAR( A.REPORT_VAL, 'FM9990.00') , 0)   REPORT_VAL,
+                   NVL( TO_CHAR( A.ATTEND_VAL, 'FM9990.00') , 0)  ATTEND_VAL,
+                   NVL( TO_CHAR( A.FINAL_VAL, 'FM9990.00') , 0)  FINAL_VAL,
+		            A.ISPASS  
+		   		FROM 
+			        TB_LE_COURSE_USER A    
+			    WHERE   
+			        A.CUSERNO = #{SES_CUSERNO}
+		    )Z
+	</select>
+</mapper>

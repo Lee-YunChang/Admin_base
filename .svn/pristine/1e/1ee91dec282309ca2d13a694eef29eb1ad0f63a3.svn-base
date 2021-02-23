@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 클래스데스크 > 강사 > 시험 > 바인더관련 -->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskTutorExamQuizbinderMapper">
+
+	<!-- 바인더 리스트 조회 -->
+	<select id="getLeExamBinderList" parameterType="dmap" resultType="emap" >
+		SELECT 
+		    B.SEQ_TITLE,   A.TITLE, B.COURSENO, B.CSEQNO,  A.SETNO, A.EVAL, A.EXAMNO,
+		    DECODE(A.EXAM_TYPE, 'M', '중간평가', 'F', '최종평가') AS  EXAM_TYPE,
+		    DECODE( A.PUB_TYPE,  'S', '세트문제', 'B', '바인더') AS PUB_TYPE, A.BIND_YN
+		FROM  TB_LE_EXAM A, TB_ED_COURSE_SEQ B 
+			WHERE A.CSEQNO = B.CSEQNO  
+		AND B.COURSENO = #{courseno} 
+		AND ( A.PUB_TYPE = 'B'  OR  A.PUB_TYPE = 'S')
+		<if test="searchWord != null and searchWord != ''">
+			<if test="searchMode == 'seq_title'">
+				AND B.SEQ_TITLE LIKE '%'|| #{searchWord}||'%'
+			</if>
+			<if test="searchMode == 'title'">
+				 AND A.TITLE LIKE '%'|| #{searchWord}||'%'
+			</if>
+			<if test="searchMode == 'all'">
+				AND ( B.SEQ_TITLE LIKE '%'|| #{searchWord}||'%' OR  A.TITLE LIKE '%'||#{searchWord}||'%')
+			</if>
+		</if>
+		
+		<if test='searchBindYn == "Y"'>
+			    AND A.BIND_YN = 'Y'
+		</if>
+        
+		<if test='searchBindYn == "N"'>
+			    AND A.BIND_YN = 'N'
+		</if>
+		ORDER BY B.CSEQNO DESC, B.SEQ_TITLE ASC, A.TITLE ASC
+	</select>
+	
+	<!-- 문제 리스트 -->
+	<select id="getLeExamQuizList" parameterType="dmap" resultType="emap" >
+		SELECT
+		 	ROW_NUMBER() OVER (ORDER BY QNO ASC) RNUM
+		 	, EXAMNO, SEQ, QNO, QTYPE, FILE_PATH, QSUBJECT
+		 	, QSUBJECT_FILE
+		 	, A01, A01_FILE, A02, A02_FILE, A03, A03_FILE, A04, A04_FILE, A05, A05_FILE, RCODE, RTEXT, SUMMARY
+		 	, WDATE, WRITER
+		    , USEYN, LEC_NUM, LEC_SEQ_NO, BUNBAN, EXAM_SEQ, TEST_SEQ, ALLOT
+		FROM 
+			TB_LE_EXAM_QUIZ 
+		WHERE EXAMNO = #{examNo}
+        <if test='addObject == "Y"'>
+         AND USEYN = 'Y'
+        </if>    
+        <if test='addObject == "N"'>
+        AND USEYN = 'N'
+        </if>
+	</select>
+	
+	<select id="getSetTotalAllotInfo" parameterType="dmap" resultType="emap" > 
+		SELECT  
+       	 NVL(SUM(ALLOT), 0) AS TOTAL_ALLOT
+        FROM 
+            TB_LE_EXAM_QUIZ 
+		WHERE EXAMNO = #{examNo}
+    	<if test='addObject == "Y"'>
+		 AND USEYN = 'Y'
+		</if>	 
+		<if test='addObject == "N"'>
+	 	AND USEYN = 'N'
+		</if>	
+	</select>
+	
+	<!-- 퀴즈 문제 조회 -->
+	<select id="getLeExamQuizInfo" parameterType="dmap" resultType="emap" >
+		SELECT 
+			EXAMNO, SEQ, QNO, QTYPE, FILE_PATH, QSUBJECT, QSUBJECT_FILE, 
+		    A01, A01_FILE, A02, A02_FILE, A03, A03_FILE, A04, A04_FILE, A05, A05_FILE, RCODE, RTEXT, SUMMARY, 
+		    WDATE, WRITER, 
+		    USEYN, LEC_NUM, LEC_SEQ_NO, BUNBAN, EXAM_SEQ, TEST_SEQ , ALLOT
+        FROM
+            TB_LE_EXAM_QUIZ   WHERE EXAMNO = #{examNo}
+        AND 
+        	QNO = #{qno}
+	</select> 
+	
+ 
+ 	<!-- 바인더 시험 문제 수 -->
+ 	<select id="getLeExamQuizTotal" parameterType="dmap" resultType="int" >
+		SELECT COUNT(*) FROM TB_LE_EXAM_QUIZ         WHERE EXAMNO =  #{binderExamNo}
+ 	</select>
+ 	
+ 	<!-- 바인더 시험 저장 -->
+ 	 <insert id="insertLeExamQuizDump" parameterType="dmap" >
+		 INSERT INTO TB_LE_EXAM_QUIZ 
+		    ( 
+		        EXAMNO, SEQ, QNO, QTYPE, FILE_PATH, QSUBJECT, QSUBJECT_FILE, 
+		        A01, A01_FILE, A02, A02_FILE, A03, A03_FILE, A04, A04_FILE, A05, A05_FILE, RCODE, RTEXT, SUMMARY, 
+		        WDATE, WRITER, 
+		        USEYN, LEC_NUM, LEC_SEQ_NO, BUNBAN, EXAM_SEQ, TEST_SEQ , ALLOT
+		    )
+	 	SELECT    
+		    #{examNo}, SEQ, QNO, QTYPE, FILE_PATH, QSUBJECT, QSUBJECT_FILE, 
+	        A01, A01_FILE, A02, A02_FILE, A03, A03_FILE, A04, A04_FILE, A05, A05_FILE, RCODE, RTEXT, SUMMARY, 
+	        SYSDATE, #{SES_USERID}, 
+	        USEYN, LEC_NUM, LEC_SEQ_NO, BUNBAN, EXAM_SEQ, TEST_SEQ, ALLOT  
+	 	FROM   
+	 		TB_LE_EXAM_QUIZ 
+	 	WHERE EXAMNO = #{binderExamNo}
+	</insert >
+ 	
+ 	<!--  저정된 시험지 삭제  -->
+ 	<delete id="deletetLeExamQuiz" parameterType="dmap">
+		 DELETE FROM TB_LE_EXAM_QUIZ WHERE EXAMNO = #{examNo}
+		
+	</delete>
+	
+	<delete id="deletetLeExamQuizSeq" parameterType="dmap">
+		 DELETE FROM TB_LE_EXAM_QUIZ WHERE EXAMNO = #{examNo} AND SEQ = #{seq}
+	</delete>
+	
+ 
+	<update id="updateLeExamQuiz" parameterType="dmap"> 
+		UPDATE TB_LE_EXAM_QUIZ SET 
+			QTYPE = #{qtype}, FILE_PATH = #{file_path}, QSUBJECT = #{qsubject}, QSUBJECT_FILE = #{qsubjectFile}, 
+			A01 = #{a01}, A01_FILE = #{a01File}, A02 = #{a02}, A02_FILE = #{a02File}, A03 = #{a03}, A03_FILE = #{a03File},
+			A04 = #{a04}, A04_FILE = #{a04File}, A05 = #{a05}, A05_FILE = #{a05File}, 
+			RCODE = #{rcode}, SUMMARY = #{summary}, WDATE = SYSDATE,  WRITER = #{writer}, USEYN = #{useyn} , RTEXT = #{rtext}, 	ALLOT = #{allot}
+		WHERE EXAMNO = #{examNo} 
+		AND QNO =   #{qno}
+	</update>
+	
+	 <insert id="insertLeExamQuiz" parameterType="dmap" >
+		 INSERT INTO TB_LE_EXAM_QUIZ 
+	( 
+		EXAMNO, SEQ ,QNO, QTYPE, FILE_PATH, QSUBJECT, QSUBJECT_FILE, 
+		A01,A01_FILE,A02,A02_FILE,A03,A03_FILE,A04,A04_FILE,A05,A05_FILE,
+		RCODE,SUMMARY,WDATE,WRITER,
+		USEYN,  RTEXT, ALLOT
+	)
+	VALUES (
+		#{examNo}, (SELECT NVL(MAX(SEQ)+1, 1) FROM TB_LE_EXAM_QUIZ WHERE EXAMNO = #{examNo}), (SELECT NVL(MAX(QNO)+1, 1) FROM TB_LE_EXAM_QUIZ WHERE EXAMNO = #{examNo}), #{qtype}, #{file_path}, #{qsubject}, #{qsubjectFile}, 
+		#{a01}, #{a01File}, #{a02}, #{a02File}, #{a03}, #{a03File}, #{a04}, #{a04File}, #{a05}, #{a05File}, 
+		#{rcode}, #{summary}, SYSDATE, #{writer}, 
+		#{useyn},  #{rtext}, #{allot}
+	)
+	</insert>
+	
+		<!-- 최종평가 -->
+	<update id="updateLeExamBindYn" parameterType="dmap">
+    <!--
+		UPDATE TB_LE_EXAM SET BIND_YN  = #{bindYn}
+    -->
+        UPDATE TB_LE_EXAM SET BIND_YN  = #{bindYnVal}
+		WHERE EXAMNO = #{examNo} 
+	</update>
+	 
+	 <!-- 과정목록 조회 -->
+	 <select id="getEdCourseList" parameterType="dmap" resultType="emap" >
+		SELECT   
+			COURSENO
+			, (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = MT_CTYPE_CODE )AS MT_CTYPE_NAME
+			, (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = MT_CGRP_CODE )AS MT_CGRP_NAME 
+			, COURSETITLE 
+		FROM 
+			TB_ED_COURSE 
+		WHERE USEYN = 'Y'
+		ORDER BY 
+			MT_CTYPE_CODE 
+			,  MT_CGRP_CODE   
+		DESC
+	</select> 
+</mapper>
+
+

@@ -1,0 +1,40 @@
+@font-face {
+     font-family: 'S-Core Dream';
+     font-style: normal;
+     font-weight: 300;
+     src: url('../fonts/SCDream/SCDream-Light.woff2') format('woff2'),
+          url('../fonts/SCDream/SCDream-Light.woff') format('woff'),
+          url('../fonts/SCDream/SCDream-Light.otf') format('opentype');
+}
+@font-face {
+     font-family: 'S-Core Dream';
+     font-style: normal;
+     font-weight: 400;
+     src: url('../fonts/SCDream/SCDream-Regular.woff2') format('woff2'),
+          url('../fonts/SCDream/SCDream-Regular.woff') format('woff'),
+          url('../fonts/SCDream/SCDream-Regular.otf') format('opentype');
+}
+@font-face {
+     font-family: 'S-Core Dream';
+     font-style: normal;
+     font-weight: 500;
+     src: url('../fonts/SCDream/SCDream-Medium.woff2') format('woff2'),
+          url('../fonts/SCDream/SCDream-Medium.woff') format('woff'),
+          url('../fonts/SCDream/SCDream-Medium.otf') format('opentype');
+}
+@font-face {
+     font-family: 'S-Core Dream';
+     font-style: normal;
+     font-weight: 700;
+     src: url('../fonts/SCDream/SCDream-Bold.woff2') format('woff2'),
+          url('../fonts/SCDream/SCDream-Bold.woff') format('woff'),
+          url('../fonts/SCDream/SCDream-Bold.otf') format('opentype');
+}
+@font-face {
+     font-family: 'S-Core Dream';
+     font-style: normal;
+     font-weight: 800;
+     src: url('../fonts/SCDream/SCDream-ExtraBold.woff2') format('woff2'),
+          url('../fonts/SCDream/SCDream-ExtraBold.woff') format('woff'),
+          url('../fonts/SCDream/SCDream-ExtraBold.otf') format('opentype');
+}

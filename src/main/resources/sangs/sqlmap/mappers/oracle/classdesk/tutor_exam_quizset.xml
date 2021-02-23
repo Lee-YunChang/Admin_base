@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 클래스데스크 > 강사 > 시험 > 세트문제관련 -->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskTutorExamQuizsetMapper">
+	<!-- 세트방식 출제 정책 리스트 -->
+	<select id="getLeExamSetList" parameterType="dmap" resultType="emap" >
+		SELECT     
+		    <!-- ROW_NUMBER() OVER (ORDER BY SETNO ASC) RNUM,  --> 
+		    ROWNUM AS RNUM,
+		    A.TITLE, 
+		    A.SUMMARY, 
+		    A.ALLOT,
+		    A.USEYN,
+		    A.SETNO,
+            ( SELECT COUNT(*) FROM TB_LE_EXAM_SQUIZ WHERE  SETNO = A.SETNO)  TOTALQNUM
+		FROM 
+			TB_LE_EXAM_SET      A
+		WHERE 
+			COURSENO =  #{SES_COURSENO}
+		<if test="paramUseyn != null and paramUseyn != ''"> AND USEYN = 'Y' </if>
+		ORDER BY SETNO ASC
+	</select>
+	<!-- 세트방식 세트 등록 -->
+	<insert id="insertLeExamSet" parameterType="dmap" >
+		INSERT INTO TB_LE_EXAM_SET ( SETNO,COURSENO,TITLE,SUMMARY, USEYN )
+		VALUES ( (SELECT NVL(MAX(SETNO)+1, 1) FROM TB_LE_EXAM_SET)  ,#{courseno} ,#{title} ,#{summary} ,   #{useyn}  )	
+	</insert>
+		
+	<!-- 세트방식 세트 수정 -->
+	<update id="updateLeExamSet" parameterType="dmap"> 
+	UPDATE TB_LE_EXAM_SET
+		SET TITLE = #{title}, SUMMARY =  #{summary}, TOTALQNUM = #{totalqnum}, ALLOT = #{allot}, USEYN =  #{useyn}
+	WHERE SETNO = #{setno}
+	</update>
+
+	<!-- 세트방식 문제 목록 -->
+	<select id="getLeExamSetQuizList" parameterType="dmap" resultType="emap" >
+		SELECT 
+			ROW_NUMBER() OVER (ORDER BY QNO ASC) RNUM 
+			, QNO
+			, QTYPE
+			, FILE_PATH, QSUBJECT, QSUBJECT_FILE, 
+			A01, A01_FILE, A02, A02_FILE, A03, A03_FILE, A04, A04_FILE, A05, A05_FILE,
+			RCODE, RTEXT, SUMMARY, WDATE, WRITER, USEYN,
+			COURSENO, SECNO, SETNO,
+			DECODE(QTYPE, 1, 'ox', 2, '객관식', 4, '주관식', 5, '서술형') AS QTYPE_NM, ALLOT
+		FROM 
+			TB_LE_EXAM_SQUIZ 
+		WHERE SETNO = #{setno}
+		AND COURSENO = #{SES_COURSENO}
+		
+		<if test='addObject == "Y"'>
+			 AND USEYN = 'Y'
+		</if>
+		<if test='addObject == "N"'>
+		 	AND USEYN = 'N'
+		</if>
+		
+		<if test='qtype != null and qtype != ""'>
+            AND QTYPE = #{qtype}
+        </if>
+		<if test='qsubject != null and qsubject != ""'> 
+            AND QSUBJECT LIKE '%'|| #{qsubject}||'%' 
+        </if>
+	</select>
+	
+	<!-- 세트 문제 총 배점 -->
+	<select id="getSetTotalAllotInfo" parameterType="dmap" resultType="emap" >
+		SELECT  
+        NVL(SUM(ALLOT), 0) AS TOTAL_ALLOT
+        FROM 
+            TB_LE_EXAM_SQUIZ 
+		WHERE SETNO = #{setno} 
+ 		<if test="addObject != null and addObject != ''">
+			<if test='addObject == "Y"'>
+				 AND USEYN = 'Y'
+			</if>
+			<if test='addObject == "N"'>
+			 	AND USEYN = 'N'
+			</if>
+		</if>
+		
+		
+	</select>
+	        
+	
+	<!-- 세트 문제 정보 -->
+	<select id="getLeExamSetQuizInfo" parameterType="dmap" resultType="emap" >
+		SELECT 
+			<!-- ROW_NUMBER() OVER (ORDER BY WDATE ASC) RNUM -->
+			ROWNUM AS RNUM
+			, QNO
+			, QTYPE
+			, FILE_PATH, QSUBJECT, QSUBJECT_FILE, 
+			A01, A01_FILE, A02, A02_FILE, A03, A03_FILE, A04, A04_FILE, A05, A05_FILE,
+			RCODE, SUMMARY, WDATE, WRITER, USEYN,
+			COURSENO, SECNO, SETNO , ALLOT, RTEXT
+		FROM 
+			TB_LE_EXAM_SQUIZ 
+		WHERE QNO = #{qno}
+		ORDER BY WDATE ASC
+	</select>
+	
+	<update id="updateLeExamSetQuiz" parameterType="dmap"> 
+		UPDATE TB_LE_EXAM_SQUIZ SET 
+			QTYPE = #{qtype}, FILE_PATH = #{file_path}, QSUBJECT = #{qsubject}, QSUBJECT_FILE = #{qsubjectFile}, 
+			A01 = #{a01}, A01_FILE = #{a01File}, A02 = #{a02}, A02_FILE = #{a02File}, A03 = #{a03}, A03_FILE = #{a03File}, A04 = #{a04}, A04_FILE = #{a04File}, A05 = #{a05}, A05_FILE = #{a05File}, 
+			RCODE = #{rcode}, SUMMARY = #{summary}, WDATE = SYSDATE,  WRITER = #{writer}, USEYN = #{useyn} ,ALLOT = #{allot}, RTEXT= #{rtext}
+		WHERE QNO =   #{qno}
+	</update>
+ 
+ 	<insert id="insertLeExamSetQuiz" parameterType="dmap" >
+		 INSERT INTO TB_LE_EXAM_SQUIZ 
+	( 
+		QNO, QTYPE, FILE_PATH, QSUBJECT, QSUBJECT_FILE, 
+		A01,A01_FILE,A02,A02_FILE,A03,A03_FILE,A04,A04_FILE,A05,A05_FILE,
+		RCODE,SUMMARY,WDATE,WRITER,
+		USEYN,COURSENO,SECNO,SETNO ,ALLOT , RTEXT
+	)
+	VALUES (
+		(SELECT NVL(MAX(QNO)+1, 1) FROM TB_LE_EXAM_SQUIZ), #{qtype}, #{file_path}, #{qsubject}, #{qsubjectFile}, 
+		#{a01}, #{a01File}, #{a02}, #{a02File}, #{a03}, #{a03File}, #{a04}, #{a04File}, #{a05}, #{a05File}, 
+		#{rcode}, #{summary}, SYSDATE, #{writer}, 
+		#{useyn}, #{SES_COURSENO}, #{secno}, #{setno} , #{allot} , #{rtext}
+	)
+
+	</insert>
+	
+	<!-- 문제 삭제 -->
+	<delete id="deletetLeExamSetQuiz" parameterType="dmap">
+		DELETE FROM TB_LE_EXAM_SQUIZ
+		WHERE QNO =   #{qno}
+	</delete>
+	
+	<!-- (문제은행) 출제정책 목록 -->
+	<select id="getEdExamSectionList" parameterType="dmap" resultType="emap" >
+		 SELECT 
+			ALLOT,
+			COURSENO,
+			DESCRIPTION,
+			SECNO,
+			SECTITLE,
+			TOTALQNUM,
+			USEYN
+		 FROM       
+		 	TB_ED_EXAM_SECTION     
+		 WHERE COURSENO = #{SES_COURSENO}
+		 AND USEYN = 'Y'
+	</select>
+	
+	
+	
+	 <insert id="insertLeExamSetQuizExamBankData" parameterType="dmap" >
+		INSERT INTO TB_LE_EXAM_SQUIZ ( 
+	        QNO,
+	        QTYPE, FILE_PATH, QSUBJECT, QSUBJECT_FILE,
+	        A01, A01_FILE, A02, A02_FILE, A03, A03_FILE, A04,A04_FILE,A05,A05_FILE,
+	        RCODE,SUMMARY,WDATE,WRITER,
+	        USEYN,COURSENO,SECNO,SETNO,RTEXT 
+	    )
+	 	SELECT    
+	        (SELECT NVL(MAX(QNO)+1, 1) FROM TB_LE_EXAM_SQUIZ), 
+	        QTYPE,FILE_PATH,QSUBJECT,QSUBJECT_FILE,
+	        A01,A01_FILE,A02,A02_FILE,A03,A03_FILE,A04,A04_FILE,A05,A05_FILE,
+	        RCODE,SUMMARY, SYSDATE , #{SES_USERID},
+	        USEYN,COURSENO,SECNO, #{setno}, #{rtext}
+	 	FROM   
+	 		TB_ED_EXAM_QUIZ 
+	 	WHERE  
+	 		COURSENO = #{courseno}
+	 	AND 
+	 		QNO = #{qno}       
+	</insert >
+</mapper>

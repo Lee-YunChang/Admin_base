@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminMtCodeMngrMapper">
+
+
+    <!-- 대분류 목록조회 -->
+    <select id="getMtcodeList" parameterType="dmap" resultType="emap">
+    	SELECT AA.*
+        FROM  (
+	        SELECT
+	            ROW_NUMBER() OVER(ORDER BY MT_CODE, MT_NAME ASC) AS NUM
+	            , MT_CODE
+	            , MT_NAME
+	            , NVL(CID, '') AS CID
+	            , USEYN
+	            , USE_GB
+	            , DECODE(USE_GB, 'S', '시스템', 'U', '업무', '-') AS USE_GB_NAME
+	            , ETC
+	        FROM TB_CD_MT
+	        WHERE 1=1
+	        <if test="useYn != null and useYn != ''">
+	            AND USEYN = #{useYn}
+	        </if>
+	        <if test="useGb != null and useGb != ''">
+	            AND USE_GB = #{useGb}
+	        </if>
+	        <if test="searchWord != null and searchWord != ''">
+				<if test="searchMode != null and searchMode == 'mtCode'">
+	              	AND MT_CODE LIKE '%'||#{searchWord}||'%'
+	            </if>
+	            <if test="searchMode != null and searchMode == 'mtName'">
+	                AND MT_NAME LIKE '%'||#{searchWord}||'%'
+	            </if>
+	         </if>
+	    ) AA
+	    WHERE 1=1
+        <if test="startNo != null and startNo != '0'"> 
+	         AND NUM BETWEEN #{startNo} AND #{endNo}
+	    </if>
+    </select>
+
+    <!-- 대분류 목록조회 count -->
+    <select id="getMtcodeListCount" parameterType="dmap" resultType="int">
+         SELECT COUNT (*) total FROM TB_CD_MT
+         WHERE 1=1
+
+         <if test="useYn != null and useYn != ''">
+            AND USEYN = #{useYn}
+        </if>
+        <if test="useGb != null and useGb != ''">
+            AND USE_GB = #{useGb}
+        </if>
+        <if test="searchWord != null and searchWord != ''">
+			<if test="searchMode != null and searchMode == 'mtCode'">
+              	AND MT_CODE LIKE '%'||#{searchWord}||'%'
+            </if>
+            <if test="searchMode != null and searchMode == 'mtName'">
+                AND MT_NAME LIKE '%'||#{searchWord}||'%'
+            </if>
+         </if>
+
+    </select>
+
+    <!-- 대분류 정보 조회 -->
+    <select id="getMtcodInfo" parameterType="dmap" resultType="emap">
+        SELECT
+            MT_NAME
+            , MT_CODE
+            , CID
+            , USEYN
+            , USE_GB
+            , DECODE(USE_GB, 'S', '시스템', 'U', '업무', '-') AS USE_GB_NAME
+            , ETC
+        FROM TB_CD_MT 
+         WHERE 1=1
+        <if test = "mtCode != null and mtCode != ''">
+        	AND MT_CODE = #{mtCode}
+        </if>
+    </select>
+
+    <!-- 대분류 등록  -->
+    <insert id="insertMtcodeInfo" parameterType="dmap">
+        INSERT INTO TB_CD_MT (
+            MT_CODE
+            , MT_NAME
+            , CID
+            , USEYN
+            , USE_GB
+            , ETC )
+        VALUES (
+            #{mtCode}
+            , #{mtName}
+            , #{cid}
+            , #{useYn}
+            , #{useGb}
+            , #{etc})
+    </insert>
+
+    <!-- 대분류 수정 -->
+    <update id="updateMtcodeInfo" parameterType="dmap">
+        UPDATE TB_CD_MT SET
+            MT_NAME = #{mtName}
+            , CID = #{cid}
+            , USEYN = #{useYn}
+            , USE_GB = #{useGb}
+            , ETC = #{etc}
+        WHERE MT_CODE = #{mtCode}
+    </update>
+
+    <!-- 소분류 목록조회 -->
+    <select id="getMtcodeSubList" parameterType="dmap" resultType="emap">
+        SELECT
+            MT_SUB_CODE
+            , MT_CODE
+            , MT_SUB_NAME
+            , NUM_CD
+            , ABC_CD
+            , USEYN
+            , ORDR
+            , SUMMARY
+        FROM TB_CD_MT_SUB
+        WHERE MT_CODE = #{mtCode}
+        ORDER BY ORDR, MT_SUB_CODE, MT_SUB_NAME ASC
+    </select>
+
+    <!-- 소분류 정보 조회 -->
+    <select id="getMtcodeSubInfo" parameterType="dmap" resultType="emap">
+        SELECT
+            MT_SUB_CODE
+            , MT_CODE
+            , MT_SUB_NAME
+            , NVL(NUM_CD, '0') AS "NUM_CD"
+            , NVL(ABC_CD, null) AS "ABC_CD"
+            , USEYN
+            , ORDR
+            , SUMMARY
+        FROM TB_CD_MT_SUB
+        WHERE MT_CODE= #{mtCode}
+        <if test = "mtSubCode != null and mtSubCode != ''">
+        	AND MT_SUB_CODE = #{mtSubCode}
+        </if> 
+    </select>
+
+    <!-- 소분류 등록  -->
+    <insert id="insertMtcodeSubInfo" parameterType="dmap">
+        INSERT INTO TB_CD_MT_SUB (
+            MT_SUB_CODE
+            , MT_CODE
+            , MT_SUB_NAME
+            , NUM_CD
+            , ABC_CD
+            , USEYN
+            , SUMMARY
+            , ORDR 
+        )
+        VALUES (
+            #{mtSubCode}
+            , #{mtCode}
+            , #{mtSubName}
+            , #{numCd}
+            , #{abcCd}
+            , #{useYn}
+            , #{summary}
+            , #{ordr}
+        )
+    </insert>
+
+    <!-- 소분류 수정 -->
+    <update id="updateMtcodeSubInfo" parameterType="dmap">
+        UPDATE TB_CD_MT_SUB
+            SET MT_SUB_NAME = #{mtSubName}
+                , NUM_CD = #{numCd}
+                , ABC_CD =#{abcCd}
+                , USEYN = #{useYn}
+                , SUMMARY = #{summary}
+            	, ORDR = #{ordr}
+        WHERE MT_CODE = #{mtCode}
+        AND   MT_SUB_CODE=#{mtSubCode}
+    </update>
+
+    <!-- 소분류 삭제 -->
+    <delete id="deleteMtcodeSubInfo" parameterType="dmap">
+        DELETE FROM TB_CD_MT_SUB
+        WHERE MT_CODE=#{mtCode} AND MT_SUB_CODE=#{mtSubCode}
+    </delete>
+
+
+</mapper>

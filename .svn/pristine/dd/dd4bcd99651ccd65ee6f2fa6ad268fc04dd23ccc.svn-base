@@ -1,0 +1,20 @@
+@charset "utf-8";
+
+
+@font-face {
+	font-family: 'NGB';
+	src:url('NanumGothicBold.eot');
+	src:url('NanumGothicBold.eot?#iefix') format('embedded-opentype'),
+			url('NanumGothicBold.woff') format('woff'), 
+			url('NanumGothicBold.ttf') format('truetype')
+}
+
+html,body,div,img,a,p,span,strong {margin:0;padding:0;font-family:'NGB';}
+img {border:0;vertical-align:middle;}
+#ad_error_wrap {width:1000px;margin:0 auto;}
+#ad_error_header {color:#4694cc;font-size:24px;margin-top:50px;}
+#ad_error_header img {margin-bottom:12px;}
+#ad_error_body {border-top:1px solid #dfdfdf;border-bottom:1px solid #dfdfdf;background:url('/common/images/img_error.jpg') 40px 40px no-repeat;padding-left:400px;height:260px;margin:20px 0 35px;}
+#ad_error_body strong {font-size:30px;margin-top:55px;display:block;}
+#ad_error_body span {display:block; margin-top:30px;line-height:26px;font-size:18px;color:#666;}
+#ad_error_footer {text-align:center;}

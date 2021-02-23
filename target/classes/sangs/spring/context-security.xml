@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:egov-security="http://www.egovframe.go.kr/schema/egov-security"
+    xmlns:security="http://www.springframework.org/schema/security"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+        http://www.egovframe.go.kr/schema/egov-security http://www.egovframe.go.kr/schema/egov-security/egov-security-3.0.xsd
+        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.2.xsd">
+        
+    <!-- 환경설정 기본정보를 globals.properties 에서 참조하도록 propertyConfigurer 설정 -->
+    <bean id="propertyConfigurer"
+        class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:/sangs/props/globals.properties</value>
+            </list>
+        </property>
+    </bean>
+
+    <security:http auto-config="true">
+        <!--
+        <security:intercept-url pattern="/dummy.do" access="IS_AUTHENTICATED_FULLY" />
+        <security:http-basic />
+        -->
+        
+        <security:form-login login-page="/admin/common/login.do"/>
+        <security:logout delete-cookies="JSESSIONID" />
+         <!--
+        <security:intercept-url pattern="/**/*login*.do" requires-channel="https" />
+        <security:intercept-url pattern="/**/*logout.do" requires-channel="https" />
+        <security:intercept-url pattern="/**/*.do" requires-channel="http" />.
+        -->
+        <security:port-mappings>
+            <security:port-mapping http="${Globals.domainPort}" https="${Globals.domainSSLPort}"/>
+        </security:port-mappings>
+		
+    </security:http>
+    
+    <security:authentication-manager>
+        <security:authentication-provider>
+            <security:user-service>
+                <security:user name="dummy" password="dummy" authorities="ROLE_DUMMY" />
+            </security:user-service>
+        </security:authentication-provider>
+    </security:authentication-manager>
+    
+</beans>

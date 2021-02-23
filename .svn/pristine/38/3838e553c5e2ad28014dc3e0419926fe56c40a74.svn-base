@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<!-- 클래스데스크 > 게시판관련 -->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskCommonMapper">
+
+
+	<resultMap id="syMailManTplClobMap" type="emap">
+        	<result property="CONTENT" column="CONTENT" jdbcType="CLOB" javaType="java.lang.String"/>
+    </resultMap>
+     
+<sql id="selectItem_fragment">
+			<if test='downNo == "1"'>	 		 
+					(FILE01_ORG) ORGFILE,
+              		(FILE01_SAVE) SAVFILE,
+			</if>
+			<if test='downNo == "2"'>	 
+				  	(FILE02_ORG) ORGFILE,
+              		(FILE02_SAVE) SAVFILE,
+			</if>
+			<if test='downNo == "3"'>	 
+				  	(FILE03_ORG) ORGFILE,
+              		(FILE03_SAVE) SAVFILE,
+			</if>
+			<if test='downNo == "4"'>	 
+				  	(FILE04_ORG) ORGFILE,
+             		(FILE04_SAVE) SAVFILE,
+			</if>
+			<if test='downNo == "5"'>	 
+				  	(FILE05_ORG) ORGFILE,
+             		(FILE05_SAVE) SAVFILE,
+			</if>
+              		(FILE_PATH) SAVPATH 
+	</sql>
+	
+ 	<select id="getLeReportFileList" resultType="emap"  parameterType="dmap"> 
+ 	
+		SELECT 
+          			<include refid="selectItem_fragment"/>
+          
+        FROM 
+        	LE_REPORT 
+		WHERE 
+			REPORTNO = #{reportno} 
+ 	</select>
+	
+ 	<select id="getLeReportApplyFileList" resultType="emap"  parameterType="dmap"> 
+ 	
+		SELECT 
+            <include refid="selectItem_fragment"/>
+        FROM 
+        	LE_REPORT_APPLY 
+		WHERE 
+			REPORTNO = #{reportno}
+ 		AND		
+ 			CUSERNO = #{cuserNo}
+ 	</select>
+	
+ 	<select id="getCuserNo" resultType="emap"  parameterType="dmap"> 
+		SELECT 
+			A.CUSERNO, A.USERNO, B.USERNAME, B.USERID
+		FROM 
+			TB_LE_COURSE_USER A, VW_TB_CT_USER B 
+		WHERE A.USERNO = B.USERNO  
+		AND CSEQNO = #{paramcSeqNo}
+		AND USEYN = 'Y'
+	    ORDER BY B.USERNAME ASC
+	</select>
+	
+	<select id="getMailRecInfo" resultMap="syMailManTplClobMap" parameterType="dmap"> 
+   
+		SELECT 
+			USERNAME, USERID, EMAIL, MOBILE, TITLE, CONTENT  
+		FROM
+	    	(   SELECT 
+	            	USERNAME, USERID, EMAIL, MOBILE 
+	        	FROM 
+	            	VW_TB_CT_USER    
+	            WHERE 
+	            	USERNO = #{userNo} 
+			) A, 
+			(	SELECT 
+					TITLE, CONTENT  
+				FROM 
+					TB_SY_MAIL_TPL 
+				WHERE 
+					TPL_UID = #{tplUid} 
+				AND 
+					USEYN='Y'   
+				AND   
+					ROWNUM =  1  
+			) B
+ 
+	</select> 
+	
+	<!-- 과정정보 -->
+	<select id="getEdCourseSeqInfo" parameterType="dmap" resultType="emap">
+		SELECT 
+			A.*, B.* 
+		FROM
+		(SELECT 
+		            CLASS_DESK,
+		            NVL(EVAL_PROGRESS, 0) AS EVAL_PROGRESS,
+		            NVL(EVAL_EXAM_MT, 0) AS EVAL_EXAM_MT,
+		            NVL(EVAL_EXAM_FINAL, 0) AS EVAL_EXAM_FINAL,
+		            NVL(EVAL_REPORT, 0) AS EVAL_REPORT,
+		            NVL(EVAL_ATTEND, 0) AS EVAL_ATTEND,
+		            (SELECT  SUM(FRAMECNT)  FROM TB_ED_COURSE_TREE WHERE COURSENO = #{SES_COURSENO} )  FRAMECNT,
+		            COMP_VAL,
+		            TO_CHAR(STUDY_SDATE,'yyyy-mm-dd') AS STUDY_SDATE,
+		            TO_CHAR(STUDY_EDATE,'yyyy-mm-dd') AS STUDY_EDATE,
+		            SEQ_TITLE
+		        FROM 
+		            TB_ED_COURSE_SEQ
+		        WHERE   
+		            CSEQNO =#{SES_CSEQNO} )  A,
+		( SELECT COUNT(*)CNT FROM  TB_LE_COURSE_USER WHERE CSEQNO = #{SES_CSEQNO} AND USEYN = 'Y'  ) B 
+	</select>
+	
+	
+	<select id="getQuizFileInfo1" parameterType="dmap" resultType="emap">
+	
+	SELECT
+		FILE_PATH, QSUBJECT_FILE, A01_FILE, A02_FILE, A03_FILE, A04_FILE, A05_FILE
+ 	FROM TB_LE_EXAM_SQUIZ WHERE 1=1 
+ 	<if test="tname != null and tname != ''">
+ 		<if test="tname == 'TB_LE_EXAM_SQUIZ'">
+			  AND QNO = #{qno}
+		</if>
+		<if test="tname == 'TB_LE_EXAM_QUIZ'">
+			AND EXAMNO = #{examno} AND SEQ = #{qno}  
+		</if>
+		<if test="tname == 'TB_ED_EXAM_QUIZ'">
+			AND QNO = #{qno}
+		</if>
+	</if>
+
+	</select>
+	
+	<select id="getQuizFileInfo2" parameterType="dmap" resultType="emap">
+	
+	SELECT
+		FILE_PATH, QSUBJECT_FILE, A01_FILE, A02_FILE, A03_FILE, A04_FILE, A05_FILE
+ 	FROM TB_LE_EXAM_QUIZ WHERE 1=1 
+ 	<if test="tname != null and tname != ''">
+ 		<if test="tname == 'TB_LE_EXAM_SQUIZ'">
+			  AND QNO = #{qno}
+		</if>
+		<if test="tname == 'TB_LE_EXAM_QUIZ'">
+			AND EXAMNO = #{examno} AND SEQ = #{qno}  
+		</if>
+		<if test="tname == 'TB_ED_EXAM_QUIZ'">
+			AND QNO = #{qno}
+		</if>
+	</if>
+
+	</select>
+	
+	<select id="getQuizFileInfo3" parameterType="dmap" resultType="emap">
+	
+	SELECT
+		FILE_PATH, QSUBJECT_FILE, A01_FILE, A02_FILE, A03_FILE, A04_FILE, A05_FILE
+ 	FROM TB_ED_EXAM_QUIZ WHERE 1=1 
+ 	<if test="tname != null and tname != ''">
+ 		<if test="tname == 'TB_LE_EXAM_SQUIZ'">
+			  AND QNO = #{qno}
+		</if>
+		<if test="tname == 'TB_LE_EXAM_QUIZ'">
+			AND EXAMNO = #{examno} AND SEQ = #{qno}  
+		</if>
+		<if test="tname == 'TB_ED_EXAM_QUIZ'">
+			AND QNO = #{qno}
+		</if>
+	</if>
+
+	</select>
+	
+</mapper>

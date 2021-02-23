@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminBbsCateMngrMapper">
+
+
+    <!-- 게시판 카테고리 조회 -->
+    <select id="getBoardCategoryList" parameterType="dmap" resultType="emap">
+        SELECT
+            T1.BCATENO AS ROOT_CATENO
+            , T1.BCATENAME AS ROOT_CATENAME
+            , T1.BCATENO
+            , T1.PBCATENO
+            , T1.BCATENAME
+            , T1.ISUSE
+            , T1.BBSTYPE
+            , T1.INTYPE
+            , T1.ISCMT
+            , T1.ISPOP
+            , T1.ISANSWER
+            , T1.ISTOP
+        FROM
+            TB_ED_BBS_CATEGORY T1
+        WHERE 1=1
+        AND PBCATENO IS NULL OR PBCATENO = 0
+        <if test="ISUSE != null and ISUSE != ''">
+            AND T2.ISUSE = #{ISUSE}
+        </if>
+
+           ORDER BY T1.BCATENO
+    </select>
+
+    <!-- 게시판 카테고리 상세정보 -->
+    <select id="getBoardCategoryInfo" parameterType="dmap" resultType="emap">
+        SELECT
+            BCATENO
+            , PBCATENO
+            , T1.BCATENAME
+            , (SELECT BCATENAME FROM TB_ED_BBS_CATEGORY WHERE BCATENO = T1.PBCATENO) AS ROOT_CATENAME
+            , T1.ISUSE
+            , T1.BBSTYPE
+            , T1.INTYPE
+            , T1.ISCMT
+            , T1.ISPOP
+            , T1.ISANSWER
+            , T1.ISTOP
+            , T1.FILE_CNT
+        FROM TB_ED_BBS_CATEGORY T1
+        WHERE 1=1
+        AND BCATENO = #{bCateNo}
+    </select>
+
+    <!-- 게시판 카테고리 등록 -->
+    <insert id="insertBoardCategory" parameterType="dmap">
+        INSERT INTO TB_ED_BBS_CATEGORY
+            (BCATENO
+            , BCATENAME
+            , ISUSE
+            <if test = "bbsType != null and bbsType != ''">, BBSTYPE</if>
+            , INTYPE
+            , ISCMT
+            <if test="isPop != null and isPop != ''">, ISPOP</if>
+            , ISANSWER
+            , ISTOP
+            , FILE_CNT )
+        VALUES
+            (
+            (SELECT NVL(MAX(BCATENO) , 0)+1 FROM TB_ED_BBS_CATEGORY)
+            , #{cateName}
+            , #{isUse}
+            <if test="bbsType != null and bbsType != ''">, #{bbsType}</if>
+            , #{inType}
+            , #{isCmt}
+            <if test="isPop != null and isPop != ''">, #{isPop}</if>
+            , #{isAnswer}
+            , #{isTop}
+            , #{fileCnt}
+            )
+
+    </insert>
+
+    <!-- 게시판 카테고리 수정 -->
+    <update id="updateBoardCategory" parameterType="dmap">
+
+        UPDATE TB_ED_BBS_CATEGORY SET
+            BCATENAME = #{cateName}
+            , ISUSE = #{isUse}
+            <if test = "inType != null and inType != ''">, INTYPE = #{inType}</if>
+            <if test = "isCmt != null and isCmt != ''">, ISCMT = #{isCmt}</if>
+            <if test = "isAnswer != null and isAnswer != ''">, ISANSWER = #{isAnswer}</if>
+            <if test = "isTop != null and isTop != ''">, ISTOP = #{isTop}</if>
+            <if test = "fileCnt != null and fileCnt != ''">, FILE_CNT = #{fileCnt}</if>
+        WHERE 1=1
+            AND BCATENO = #{bCateNo}
+
+    </update>
+
+
+    <!-- 카테고리 count -->
+    <select id="getSubCategoryCnt" resultType="int" parameterType="dmap">
+         SELECT
+            COUNT (*) total
+        FROM TB_ED_BBS_CATEGORY
+        WHERE PBCATENO = #{bCateNo}
+    </select>
+
+
+    <!-- 게시판코드 삭제 -->
+    <delete id="deleteBoardCategory" parameterType="dmap">
+        DELETE FROM TB_ED_BBS_CATEGORY WHERE BCATENO = #{bCateNo}
+    </delete>
+
+    <!-- 게시판 카테고리 상세 목록 조회 -->
+    <select id="getBoardSubCategoryList" resultType="emap" parameterType="dmap">
+        SELECT
+            BCATENO
+            , BCATENAME
+            , ISUSE
+            , BBSTYPE
+            , INTYPE
+            , ISCMT
+            , ISPOP
+            , ISANSWER
+            , ISTOP
+            , PBCATENO
+        FROM
+            TB_ED_BBS_CATEGORY
+        WHERE PBCATENO = #{bCateNo}
+        ORDER BY BCATENO
+    </select>
+
+    <!-- 게시판 카테고리 상세 정보 -->
+    <select id="getBoardSubCategoryInfo" resultType="emap" parameterType="dmap">
+        SELECT
+            BCATENO
+            , PBCATENO
+            , T1.BCATENAME
+            , (SELECT BCATENAME FROM TB_ED_BBS_CATEGORY WHERE BCATENO = T1.PBCATENO) AS ROOT_CATENAME
+            , T1.ISUSE
+            , T1.BBSTYPE
+            , T1.INTYPE
+            , T1.ISCMT
+            , T1.ISPOP
+            , T1.ISANSWER
+            , T1.ISTOP
+            , T1.FILE_CNT
+        FROM TB_ED_BBS_CATEGORY T1
+        WHERE 1=1
+        AND BCATENO = #{bCateNo}
+        AND PBCATENO = #{pbCateNo}
+    </select>
+
+
+    <!-- 게시판 카테고리 상세 정보 등록-->
+    <insert id="insertBoardSubCategory" parameterType="dmap">
+        INSERT INTO TB_ED_BBS_CATEGORY
+                (BCATENO
+                , PBCATENO
+                , BCATENAME
+                , ISUSE
+                <if test = "bbsType != null and bbsType != ''">, BBSTYPE</if>
+                <if test = "inType != null and inType != ''">, INTYPE</if>
+                <if test = "isCmt != null and isCmt != ''">, ISCMT</if>
+                <if test = "isPop != null and isPop != ''">, ISPOP</if>
+                <if test = "isAnswer != null and isAnswer != ''">, ISANSWER</if>
+				<if test = "isTop != null and isTop != ''">, ISTOP </if>               
+                )
+            VALUES
+                ( 
+                #{maxBcateno}
+                , #{rootCateNo}
+                , #{cateName}
+                , #{isUse}
+                <if test = "bbsType != null and bbsType != ''">, #{bbsType}</if>
+                <if test = "inType != null and inType != ''">, #{inType}</if>
+                <if test = "isCmt != null and isCmt != ''">, #{isCmt}</if>
+                <if test = "isPop != null and isPop != ''">, #{isPop}</if>
+                <if test = "isAnswer != null and isAnswer != ''">, #{isAnswer}</if>
+				<if test = "isTop != null and isTop != ''">, #{isTop}</if>                
+                )
+        </insert>
+        
+        <select id="getMaxBcateno" resultType="int" parameterType="dmap">
+        	SELECT MAX(BCATENO)+1 AS MAXNO FROM TB_ED_BBS_CATEGORY 
+        </select>
+
+        <!-- 게시판 카테고리 상세 정보 삭제-->
+        <delete id="deleteBoardSubCategory" parameterType="dmap">
+            DELETE FROM TB_ED_BBS_CATEGORY WHERE BCATENO = #{bCateNo}
+        </delete>
+</mapper>

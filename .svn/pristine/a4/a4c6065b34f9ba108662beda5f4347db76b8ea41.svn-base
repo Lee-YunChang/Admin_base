@@ -1,0 +1,10 @@
+@charset "utf-8";
+
+/* button */
+.btn {font-size: 12px; color: #fff; background: #381360; border-radius: 5px; transition: .3s ease-in-out;}
+.btn:hover {background: #16002d;}
+.type1 {height: 30px; padding: 0 10px;}
+.type2 {height: 30px; padding: 0 15px;}
+.type3 {height: 30px; padding: 0 28px;}
+
+.ico_search {height: 30px; padding: 0 10px 0 30px; background: #381360 url('../images/ico_search.png') left 10px center / 14px auto no-repeat; font-size: 12px; color: #fff; border-radius: 5px;  }

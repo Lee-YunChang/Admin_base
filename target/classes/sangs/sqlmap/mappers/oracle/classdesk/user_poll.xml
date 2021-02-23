@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 클래스데스크 > 학생 > 설문 -->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskUserPollMapper">
+
+	<select id="getPollApplyMainList" resultType="emap" parameterType="dmap">
+		SELECT * FROM
+		(SELECT COUNT(1) AS CNT FROM TB_LE_POLL_APPLY
+        WHERE CUSERNO = #{SES_CUSERNO}
+        AND   POLLCSEQNO IN (SELECT
+                                POLLCSEQNO
+                            FROM TB_LE_POLL A
+                            WHERE CSEQNO = #{SES_CSEQNO}
+                            )
+    	<if test='userSubmitYn == "Y"'>
+		   AND EDATE IS NOT NULL
+		</if>
+        )A,
+         (SELECT COUNT(*)POLLCNT FROM TB_LE_POLL WHERE CSEQNO = #{SES_CSEQNO} AND OPENYN = 'Y') B
+        
+	</select>
+	
+	<!--  설문 목록  -->
+	<select id="getUserPollList" resultType="emap" parameterType="dmap">
+		SELECT
+			<!-- ROW_NUMBER() OVER (ORDER BY B.QNO ASC) RNUM -->
+			ROWNUM AS RNUM
+			, A.CSEQNO
+			, A.TITLE
+			, A.SDATE
+			, A.EDATE
+			, A.CNT
+			, A.OPENYN
+			, A.RESULTYN
+			, B.POLLCSEQNO
+			, B.QNO
+			, B.MT_CPOLL_CODE
+			, (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = B.MT_CPOLL_CODE) AS MT_CPOLL_NAME
+			, B.SUBJECT
+			, B.EVALTYPE
+			, B.SUMMARY
+			, B.ITEM01
+			, B.ITEM01_VAL
+			, B.ITEM02
+			, B.ITEM02_VAL
+			, B.ITEM03
+			, B.ITEM03_VAL
+			, B.ITEM04
+			, B.ITEM04_VAL
+			, B.ITEM05
+			, B.ITEM05_VAL
+			, B.USEYN 
+		FROM TB_LE_POLL A, TB_LE_POLL_QUIZ B 
+	    WHERE A.POLLCSEQNO = B.POLLCSEQNO(+) 
+		AND   A.CSEQNO = #{SES_CSEQNO}
+		AND   B.USEYN = 'Y'
+		AND   A.OPENYN = 'Y'
+		<if test='openType == "D"'>
+			AND  TO_CHAR(SYSDATE,'YYYYMMDD')  BETWEEN TO_CHAR(A.SDATE,'YYYYMMDD') AND TO_CHAR(A.EDATE,'YYYYMMDD')
+		</if> 
+        ORDER BY B.QNO
+	</select>
+
+	<!-- 강의실 설문 응시내역 -->
+	<insert id="insertPollApply" parameterType="dmap">
+		INSERT INTO TB_LE_POLL_APPLY (CUSERNO, POLLCSEQNO, SDATE, COURSENO, CSEQNO, USERNO, USERID, USERNAME) 
+		VALUES (
+			#{SES_CUSERNO}
+			 , (SELECT
+                   POLLCSEQNO
+                FROM TB_LE_POLL
+                WHERE CSEQNO = #{SES_CSEQNO}
+               )
+			 , SYSDATE
+		     , #{SES_COURSENO}
+		     , #{SES_CSEQNO}
+		     , #{SES_USERNO} 
+		     , (SELECT UNITY_ID FROM TB_CT_UNITY_MBER WHERE UNITY_MBERNO = #{SES_USERNO})
+		     , (SELECT MBERNM FROM TB_CT_UNITY_MBER WHERE UNITY_MBERNO = #{SES_USERNO})
+		     
+		     )
+	
+	</insert>
+
+	<!-- 강의실 설문 응시답안 -->
+	<insert id="insertPollApplyHist" parameterType="dmap">
+		INSERT INTO TB_LE_POLL_HIST (CUSERNO, POLLCSEQNO, QNO) 
+		SELECT 
+			#{SES_CUSERNO}
+			, POLLCSEQNO
+			, QNO
+		FROM TB_LE_POLL_QUIZ 
+		WHERE POLLCSEQNO IN (SELECT
+                                POLLCSEQNO
+                            FROM TB_LE_POLL A
+                            WHERE CSEQNO = #{SES_CSEQNO}
+                            )
+		AND USEYN = 'Y'
+	</insert>
+	
+	<!-- 설문 실시간 정답 -->
+	<update id="updatePollRealTmAns" parameterType="dmap">
+		UPDATE TB_LE_POLL_HIST
+		SET ITEMSEQ = #{itemSeq}
+			, ANSWER = #{answer}
+		WHERE CUSERNO = #{SES_CUSERNO}
+		AND   POLLCSEQNO = #{pollcSeqNo}
+		AND   QNO = #{qNo}
+	</update>
+	
+	
+	<update id="updatePollApply" parameterType="dmap">
+		UPDATE TB_LE_POLL_APPLY
+		SET OPENYN = #{openYn}
+			<if test='openYn == "Y"'>
+				, EDATE = SYSDATE
+			</if>
+		WHERE CUSERNO = #{SES_CUSERNO}
+		AND   POLLCSEQNO = #{pollcSeqNo}
+	</update>
+	
+
+
+	
+	
+	<!--  과제 목록  -->
+	<select id="getPollApplyHistList" resultType="emap" parameterType="dmap">
+		SELECT
+			<!-- ROW_NUMBER() OVER (ORDER BY B.QNO ASC) RNUM -->
+			ROWNUM AS RNUM
+			, A.CSEQNO
+			, A.TITLE
+			, A.SDATE
+			, A.EDATE
+			, A.CNT
+			, A.OPENYN
+			, A.RESULTYN
+			, B.POLLCSEQNO
+			, B.QNO
+			, B.MT_CPOLL_CODE
+			, (SELECT MT_SUB_NAME INTO RESULT FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = B.MT_CPOLL_CODE) MT_CPOLL_NAME
+			, B.SUBJECT
+			, B.EVALTYPE
+			, B.SUMMARY
+			, B.ITEM01
+			, B.ITEM01_VAL
+			, B.ITEM02
+			, B.ITEM02_VAL
+			, B.ITEM03
+			, B.ITEM03_VAL
+			, B.ITEM04
+			, B.ITEM04_VAL
+			, B.ITEM05
+			, B.ITEM05_VAL
+			, B.USEYN	
+			, D.ITEMSEQ
+            , D.ANSWER
+            , D.VAL
+		FROM TB_LE_POLL A, TB_LE_POLL_QUIZ B, TB_LE_POLL_APPLY C, TB_LE_POLL_HIST D
+		WHERE A.POLLCSEQNO = B.POLLCSEQNO
+        AND   A.POLLCSEQNO = C.POLLCSEQNO
+        AND   C.CUSERNO = D.CUSERNO
+        AND   C.POLLCSEQNO = D.POLLCSEQNO
+        AND   B.QNO = D.QNO
+       										 
+		AND   A.CSEQNO = #{SES_CSEQNO}
+        AND   C.CUSERNO = #{SES_CUSERNO}
+        AND   B.USEYN = 'Y'
+		ORDER BY B.QNO
+	</select>
+	
+</mapper>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 클래스데스크 > 강사 > 진도학습관련 -->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskTutorProgressMapper">
+
+	<select id="getEdCourseTreeList" parameterType="dmap" resultType="emap">
+        SELECT 
+            X.TREENO 
+            ,X.COURSENO 
+            ,X.SDAY
+            ,X.SUBJECT 
+            ,X.SUBCNT
+            ,X.FRAMECNT
+            ,X.RUNTIME
+            ,X.FILE_PATH
+            ,X.TREE_FILE_PATH
+            ,X.START_FILE
+            ,X.CON_HEIGHT
+            ,X.CON_WIDTH
+            ,ROUND(NVL(Y.PAGE_CNT, 0) / X.FRAMECNT * 100, 2) AS AVG_FRAMSEQ
+<!--             ,REPLACE(TO_CHAR(FORMAT(NVL(Y.PAGE_CNT, 0) / X.FRAMECNT * 100, 2)), '.00', '') AS AVG_FRAMSEQ -->
+        FROM  TB_ED_COURSE_TREE X
+        LEFT OUTER JOIN (
+        	SELECT
+        		A.TREENO
+        		,AVG(FRAMESEQ) AS PAGE_CNT
+        	FROM
+        		TB_LE_TREE_HIST A
+        		INNER JOIN TB_ED_COURSE_TREE B ON (A.TREENO = B.TREENO)
+        		INNER JOIN TB_LE_COURSE_USER C ON (A.CUSERNO = C.CUSERNO)
+        	WHERE 
+        		B.COURSENO = #{SES_COURSENO}
+        		AND C.CSEQNO = #{SES_CSEQNO}
+        	GROUP BY A.TREENO	
+        ) Y ON (X.TREENO = Y.TREENO)        
+        WHERE COURSENO = #{SES_COURSENO}
+        ORDER BY SDAY
+	</select>
+	
+	<select id="getConurlInfo" parameterType="dmap" resultType="emap">
+		SELECT CONURL FROM TB_ED_COURSE   WHERE COURSENO =  #{SES_COURSENO}
+	</select>
+</mapper>

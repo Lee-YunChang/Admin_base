@@ -1,0 +1,156 @@
+@charset "utf-8";
+
+@font-face {
+	font-family:'ng'; font-style:normal; font-weight:400;
+	src:url('/admin/common/css/font/NanumGothic-Regular.eot');
+	src:url('/admin/common/css/font/NanumGothic-Regular.eot?#iefix') format('embedded-opentype'), url('/admin/common/css/font/NanumGothic-Regular.woff') format('woff'), url('/admin/common/css/font/NanumGothic-Regular.ttf') format('truetype');
+}
+@font-face {
+	font-family:'ng_bold'; font-style:normal; font-weight:700;
+	src:url('/admin/common/css/font/NanumGothic-Bold.eot');
+	src:url('/admin/common/css/font/NanumGothic-Bold.eot?#iefix') format('embedded-opentype'), url('/admin/common/css/font/NanumGothic-Bold.woff') format('woff'), url('/admin/common/css/font/NanumGothic-Bold.ttf') format('truetype');
+}
+@font-face {
+	font-family:'ng_ex'; font-style:normal; font-weight:800;
+	src:url('/admin/common/css/font/NanumGothic-ExtraBold.eot');
+	src:url('/admin/common/css/font/NanumGothic-ExtraBold.eot?#iefix') format('embedded-opentype'), url('/admin/common/css/font/NanumGothic-ExtraBold.woff') format('woff'), url('/admin/common/css/font/NanumGothic-ExtraBold.ttf') format('truetype');
+}
+@font-face {
+	font-family:'ng_sqr'; font-style:normal; font-weight:800;
+	src:url('/admin/common/css/font/NanumSquareR.eot');
+	src:url('/admin/common/css/font/NanumSquareR.eot?#iefix') format('embedded-opentype'), url('/admin/common/css/font/NanumSquareR.woff') format('woff'), url('/admin/common/css/font/NanumSquareR.ttf') format('truetype');
+}
+@font-face {
+	font-family:'ng_sqb'; font-style:normal; font-weight:900;
+	src:url('/admin/common/css/font/NanumSquareB.eot');
+	src:url('/admin/common/css/font/NanumSquareB.eot?#iefix') format('embedded-opentype'), url('/admin/common/css/font/NanumSquareB.woff') format('woff'), url('/admin/common/css/font/NanumSquareB.ttf') format('truetype');
+}
+@font-face {
+	font-family:'ng_sqex'; font-style:normal; font-weight:900;
+	src:url('/admin/common/css/font/NanumSquareEB.eot');
+	src:url('/admin/common/css/font/NanumSquareEB.eot?#iefix') format('embedded-opentype'), url('/admin/common/css/font/NanumSquareEB.woff') format('woff'), url('/admin/common/css/font/NanumSquareEB.ttf') format('truetype');
+} 
+/* Reset */
+* {margin:0; padding:0;}
+html {font-size:100%;}
+body, input, select, textarea, button {font-size:13px; line-height:1.2; font-family:'ng', '나눔고딕','ng_sqr','ng_sqb','ng_ex','맑은 고딕', 'Malgun Gothic', '돋움', Dotum, Helvetica, Arial, Sans-serif; color:#333;}
+body {word-wrap:break-word; -webkit-text-size-adjust:none;
+
+font-smoothing: antialiased;
+-moz-font-smoothing: antialiased;
+-webkit-font-smoothing: subpixel-antialiased;
+-webkit-font-smoothing: antialiased;
+
+}
+textarea {-webkit-appearance:none; -moz-appearance:none; appearance:none; -webkit-border-radius:0; -moz-border-radius:0; -o-border-radius:0; border-radius:0;  -webkit-box-shadow: none;-moz-box-shadow: none;box-shadow: none;}
+input[type="text"]{-webkit-appearance:none; -webkit-box-shadow: none;-moz-box-shadow: none;box-shadow: none;}
+input {-webkit-appearance: none; -webkit-border-radius: 0;}
+input, select, textarea {vertical-align:middle; -webkit-box-sizing:border-box; box-sizing:border-box; -webkit-appearance:none; -webkit-box-shadow: none;-moz-box-shadow: none;box-shadow: none;}
+input::-ms-clear, input::-ms-reveal {display:none;}
+input::-webkit-search-cancel-button {-moz-appearance:none; -webkit-appearance:none; appearance:none;}
+input::-webkit-clear-button, input::-webkit-inner-spin-button, input::-webkit-outer-spin-button {display:none; -moz-appearance:none; -webkit-appearance:none; appearance:none;}
+button {background:none; border:0; border-radius:0; overflow:visible; cursor:pointer;}
+textarea {resize:none;}
+label {vertical-align:middle; cursor:pointer;}
+a {color:inherit; text-decoration:none;}
+a:active, a:hover, a:focus {text-decoration:none;}
+h1, h2, h3, h4, h5, h6 {font-size:100%;}
+em, address {font-style:normal;}
+ol, ul {list-style:none;}
+img {max-width:100%;}
+img, fieldset {border:0;}
+table {border:0; border-spacing:0;}
+legend {visibility:hidden; position:absolute; left:-5000px; font-size:0; line-height:0;}
+caption {visibility:hidden; text-indent:-5000px; font-size:0; line-height:0;}
+hr {display:none;}
+a:hover,a:focus,a:active{text-decoration:none;}
+button {vertical-align:middle;}
+/* Accessibility */
+#skipnav {position:relative;}
+#skipnav a {display:block; position:absolute; z-index:99999; top:0; left:-9999px; width:100%; padding:10px 0; background-color:rgba(0,0,0,0.8); text-align:center; color:#fff;}
+#skipnav a:focus, #skipnav li a:active {left:0;}
+.hidden {position:absolute !important; left:-99999px !important;}
+
+.ellipsis{display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;} /* width 추가 */
+
+/* -------------
+ * Selects
+ * ------------- */
+.jqTransformSelectWrapper {width:100%;position:relative;line-height:36px;height: 36px;float:left;}
+.jqTransformSelectOpen:after {display:block; content:""; position:absolute; top:50%; right:16px; width:10px; height:5px; background: url('/academy/images/main/select.png') no-repeat; margin-top:-3px; cursor:pointer;}
+
+/*
+.jqTransformSelectWrapper:after {display:block; content:""; position:absolute; top:50%; right:16px; width:10px; height:5px; background: url('/academy/images/main/select.png') no-repeat; margin-top:-3px; cursor:pointer;}
+*/
+/*
+.jqTransformSelectWrapper.select {	background:url('/academy/images/main/select.png') 108px 50% no-repeat;}
+.jqTransformSelectWrapper.select:after {display:block; content:""; clear:both;}
+.jqTransformSelectWrapper.select div span{color:#8c499e;}
+*/
+.jqTransformSelectWrapper div span {float:none; position:absolute; white-space:nowrap; height:36px; line-height:36px; vertical-align:middle; padding-left:10px; overflow:hidden; cursor:pointer; font-family:ng_bold;}
+.jqTransformSelectWrapper  a.jqTransformSelectOpen {display: block;position: absolute;right: 0px;width: 100%;height: 36px;}
+.jqTransformSelectWrapper .container{margin-top:36px;}
+.jqTransformSelectWrapper ul {border:solid 1px #ccc; left:0px; width:123px; height:auto; list-style:none; background-color:#FFF; display:none; margin-left:-1px; padding:0px; overflow:auto; z-index:10;}
+.jqTransformSelectWrapper ul a {display: block; padding-left:10px; text-decoration: none;color:#333;font-size:0.923em; line-height:32px;}
+.jqTransformSelectWrapper ul a.selected {color: #333;}
+
+.jqTransformSelectWrapper ul a:hover, .jqTransformSelectWrapper ul a.selected:hover {}
+
+/* -------------
+ * Hidden - used to hide the original form elements
+ * ------------- */
+.jqTransformHidden {display: none;}
+
+/******* sub select *******/
+.sub-select:after {display:block; content:""; clear:both;}
+.sub-select .jqTransformSelectWrapper {float:none;}
+.sub-select .jqTransformSelectWrapper .container{position:absolute; top:0; left:0; z-index:10; margin-top:26px; width:100%;} 
+.sub-select {border: 1px solid #d2d2d2;}
+.sub-select .jqTransformSelectOpen:after {width:14px; height:8px; right:7px; background: url('/academy/images/main/select.png') no-repeat; margin-top:-3px;}
+/*
+.sub-select .jqTransformSelectWrapper:after {right:7px; background: url('/academy/images/main/select.png') no-repeat; margin-top:-3px;}
+*/
+.sub-select {width:60px;}
+.sub-select .jqTransformSelectWrapper {width:100%; height:26px; line-height:26px; -webkit-box-sizing:border-box; -moz-box-sizing:border-box; box-sizing:border-box;}
+.sub-select .jqTransformSelectWrapper a.jqTransformSelectOpen {height:26px; font-weight:normal; font-family:'ng';}
+.sub-select .jqTransformSelectWrapper ul {width:100%; max-height: 160px;}
+.sub-select .jqTransformSelectWrapper div span {height:26px; line-height:26px; font-family:'ng'; font-size:13px;}
+
+.sub-select.type02 {width:118px;}
+.sub-select.type02 .jqTransformSelectWrapper {width:100%}
+
+.sub-select .jqTransformSelectWrapper ul a {padding-left:10px;}
+
+/* checkbox */
+.checks {position: relative;}
+.checks input[type="checkbox"] {  /* 화면숨김 */
+ position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip:rect(0,0,0,0); border: 0}
+
+.checks input[type="checkbox"] + label {display: inline-block; position: relative; cursor: pointer; font-size:1em; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;}
+.checks input[type="checkbox"] + label:before {  /* 가짜 체크박스 */content:''; display:inline-block;  width:15px; height:15px; line-height:15px; margin: -2px 8px 0 0; text-align: center; vertical-align: middle; background:#fff; border: 1px solid #d2d2d2;}
+
+.checks input[type="checkbox"] + label:active:before,
+.checks input[type="checkbox"]:checked + label:active:before {}
+
+.checks input[type="checkbox"]:checked + label:before {background:url('/academy/images/sub/chk2.png') no-repeat; background-size:15px auto;}
+
+/* radio */
+.checks input[type="radio"] {  /* 화면숨김 */
+ position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip:rect(0,0,0,0); border: 0}
+
+.checks input[type="radio"] + label {display: inline-block; position: relative; cursor: pointer; font-size:1em; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;}
+.checks input[type="radio"] + label:before {  /* 가짜 체크박스 */content:''; display:inline-block;  width:15px; height:15px; line-height:15px; margin: -2px 8px 0 0; text-align: center; vertical-align: middle; background:url('/academy/images/sub/radio_pc.png') no-repeat;}
+
+.checks input[type="radio"] + label:active:before,
+.checks input[type="radio"]:checked + label:active:before {}
+
+.checks input[type="radio"]:checked + label:before {background:url('/academy/images/sub/radio_pcon.png') no-repeat; background-size:15px auto;/* border: 1px solid #d2d2d2; border-radius: 50%; */}
+
+
+/* 더보기 기능 */
+.device-check {}
+.device-check div {display:none;}
+.edu-list > li {display:none;}
+.edu-list > li.add-item-pc {display:none;}
+.edu-list > li.add-item-tablet {display:none;}
+.edu-list > li.add-item-mobile {display:none;}

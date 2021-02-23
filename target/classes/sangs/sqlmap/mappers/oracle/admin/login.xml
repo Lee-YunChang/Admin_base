@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminLoginMapper">
+
+	<!-- 
+	공통 > 로그인 > 사용자 세션 업데이트
+	-->
+	<update id="updateLoginInfo" parameterType="dmap">
+		UPDATE TB_CT_UNITY_MBER SET 
+			LOGIN_DATE = SYSDATE
+			, SESSION_ID = #{loginSessionId}
+	    WHERE UNITY_MBERNO = #{loginUserNo}
+	</update>  
+	
+</mapper>

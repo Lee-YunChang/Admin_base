@@ -1,0 +1,1922 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminStatsMapper">
+	
+	<!-- 상단 년도 -->
+    <select id="getInsertPayYear" resultType="emap" parameterType="dmap">
+         SELECT
+          A.*
+        FROM
+            (
+               SELECT
+                   TO_CHAR(B.STUDY_SDATE, 'YYYY') SEQYEAR
+
+               FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+               WHERE A.COURSENO = B.COURSENO
+               AND B.STUDY_SDATE IS NOT NULL
+               AND A.MT_CTYPE_CODE IN ('DAAA00', 'DAAA01', 'DAAA03')
+
+           )A GROUP BY SEQYEAR ORDER BY SEQYEAR DESC
+    </select>
+
+    <!-- 상단 월 -->
+    <select id="getInsertPayMonth" resultType="emap" parameterType="dmap">
+         SELECT
+          A.*
+        FROM
+            (
+               SELECT
+                   TO_CHAR(B.STUDY_SDATE, 'MM') MM
+               FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+               WHERE A.COURSENO = B.COURSENO
+               AND B.STUDY_SDATE IS NOT NULL
+               AND A.MT_CTYPE_CODE IN ('DAAA00', 'DAAA01', 'DAAA03')
+
+           )A GROUP BY MM ORDER BY MM ASC
+    </select>
+
+	 <!-- 교육실적통계 -->
+    <select id="getCourseUserStats" resultType="emap" parameterType="dmap">
+		SELECT A.*, ROWNUM AS RNUM
+		FROM
+			(
+				SELECT
+			          T1.COURSENO
+			        , T1.MT_CGRP_CODE
+			        , T1.MT_CGRP_NAME
+			        , T1.MT_CTYPE_CODE
+			        , T1.MT_CTYPE_NAME
+			        , T1.COURSETITLE
+			        ,(
+			        SELECT COUNT(*) 
+			        FROM TB_LE_COURSE_USER
+					WHERE CSEQNO IN
+						(
+						SELECT CSEQNO 
+						FROM TB_ED_COURSE_SEQ 
+						WHERE STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+						AND COURSENO = T1.COURSENO
+						)
+			        ) AS TOT_APPLY_USER
+			        ,(
+			        SELECT COUNT(*) 
+			        FROM TB_LE_COURSE_USER
+					WHERE CSEQNO IN
+						(
+						SELECT CSEQNO 
+						FROM TB_ED_COURSE_SEQ 
+						WHERE STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+						AND COURSENO = T1.COURSENO
+						)
+					AND USEYN='Y'
+			        ) AS TOT_STUDY_USER
+			        ,(
+			        SELECT COUNT(*) 
+			        FROM TB_LE_COURSE_USER
+					WHERE CSEQNO IN
+						(
+						SELECT CSEQNO 
+						FROM TB_ED_COURSE_SEQ 
+						WHERE STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+						AND COURSENO = T1.COURSENO
+						)
+					AND USEYN='Y'
+					AND ISPASS = 'Y'
+			        ) AS TOT_COMP_USER
+			
+			        , NVL(
+			        (
+			        SELECT TRUNC(AVG(FINAL_VAL),2) 
+			        FROM TB_LE_COURSE_USER
+			        WHERE USEYN = 'Y' 
+			        AND ISPASS = 'Y' 
+			        AND CSEQNO IN 
+			            (
+			            SELECT CSEQNO 
+						FROM TB_ED_COURSE_SEQ 
+						WHERE STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+						AND COURSENO = T1.COURSENO
+			            )
+			        )
+			        ,0) AVG_FINAL_VAL 
+			    FROM
+			        (SELECT
+			          COURSENO
+			          , MT_CGRP_CODE
+			          , (SELECT MT_SUB_NAME  FROM TB_CD_MT_SUB T3 WHERE T3.MT_SUB_CODE = MT_CGRP_CODE) AS MT_CGRP_NAME
+			          , MT_CTYPE_CODE
+			          , (SELECT MT_SUB_NAME  FROM TB_CD_MT_SUB T3 WHERE T3.MT_SUB_CODE = MT_CTYPE_CODE) AS MT_CTYPE_NAME
+			          , COURSETITLE
+			          FROM
+			          TB_ED_COURSE
+			          WHERE USEYN = 'Y'
+			          <if test="mtCtypeCode != null and mtCtypeCode != ''">
+			          AND MT_CTYPE_CODE = #{mtCtypeCode}
+			          </if>
+			          ORDER BY MT_CTYPE_CODE
+			        ) T1
+			) A
+    </select>
+    
+     <!-- 상단 과정목록 -->
+    <select id="getCmmnCourseList" resultType="emap" parameterType="dmap">
+        SELECT
+          COURSENO
+          , MT_CGRP_CODE
+          , (SELECT MT_SUB_NAME  FROM TB_CD_MT_SUB T3 WHERE T3.MT_SUB_CODE = MT_CGRP_CODE) AS MT_CGRP_NAME
+          , MT_CTYPE_CODE
+          , (SELECT MT_SUB_NAME  FROM TB_CD_MT_SUB T3 WHERE T3.MT_SUB_CODE = MT_CTYPE_CODE) AS MT_CTYPE_NAME
+          , COURSETITLE
+          FROM
+          TB_ED_COURSE
+          WHERE USEYN = 'Y'
+          AND MT_CTYPE_CODE = #{mtCtypeCode}
+          ORDER BY MT_CTYPE_CODE
+          
+    </select>
+    
+     <!-- 신청통계 -->
+    <select id="getCourseApplyStats" resultType="emap" parameterType="dmap">
+        	SELECT
+              T2.VAL LEMONTH
+            , NVL(T1.CNT, 0) TOT_CNT
+        FROM
+          (
+            SELECT
+                  LEYEAR
+                , LEMONTH
+                , COUNT(*) CNT
+            FROM
+                (SELECT
+                    TO_CHAR(WDATE, 'YYYY') LEYEAR
+                  , TO_CHAR(WDATE, 'MM') LEMONTH
+                FROM TB_LE_COURSE_USER
+                WHERE 1=1
+				AND WDATE BETWEEN TO_TIMESTAMP(#{startDate}, 'YYYY-MM-DD HH24:MI:SS') AND  TO_TIMESTAMP(#{endDate}, 'YYYY-MM-DD HH24:MI:SS')
+				<if test="courseNo != null and courseNo != ''">
+                        AND CSEQNO IN  (SELECT CSEQNO FROM TB_ED_COURSE_SEQ WHERE COURSENO = #{courseNo})
+                </if>
+                )T1
+            GROUP BY LEYEAR, LEMONTH
+          ) T1
+          , COPY_T T2
+        WHERE  T2.GB = 'MONT'
+            AND	T2.VAL = T1.LEMONTH (+)
+        ORDER BY T2.VAL
+    </select>
+    
+    <!-- 접속통계 > 연도목록(콤보박스용) -->
+	<select id="getAccessLogYearForCombo" resultType="emap" parameterType="dmap">
+		SELECT 
+			DISTINCT ACCES_YEAR 
+		FROM 
+			TB_SY_ACCES_STATS
+		WHERE 
+			SYS_GB = #{sysGb}
+			AND ACCES_URL = #{accessUrl}
+		GROUP BY ACCES_YEAR
+		ORDER BY ACCES_YEAR DESC
+	</select>
+	
+	<!-- 접속통계 > 월별통계 -->
+	<select id="getAccessLogMonth" resultType="emap" parameterType="dmap">
+	 	SELECT
+		    ACCES_YEAR
+		    , SUM(DECODE(ACCES_MONTH, 1, ACCES_CNT, 0)) AS ACCES_MONTH1  
+		    , SUM(DECODE(ACCES_MONTH, 2, ACCES_CNT, 0)) AS ACCES_MONTH2
+		    , SUM(DECODE(ACCES_MONTH, 3, ACCES_CNT, 0)) AS ACCES_MONTH3
+		    , SUM(DECODE(ACCES_MONTH, 4, ACCES_CNT, 0)) AS ACCES_MONTH4
+		    , SUM(DECODE(ACCES_MONTH, 5, ACCES_CNT, 0)) AS ACCES_MONTH5
+		    , SUM(DECODE(ACCES_MONTH, 6, ACCES_CNT, 0)) AS ACCES_MONTH6
+		    , SUM(DECODE(ACCES_MONTH, 7, ACCES_CNT, 0)) AS ACCES_MONTH7
+		    , SUM(DECODE(ACCES_MONTH, 8, ACCES_CNT, 0)) AS ACCES_MONTH8
+		    , SUM(DECODE(ACCES_MONTH, 9, ACCES_CNT, 0)) AS ACCES_MONTH9
+		    , SUM(DECODE(ACCES_MONTH, 10, ACCES_CNT, 0)) AS ACCES_MONTH10
+		    , SUM(DECODE(ACCES_MONTH, 11, ACCES_CNT, 0)) AS ACCES_MONTH11
+		    , SUM(DECODE(ACCES_MONTH, 12, ACCES_CNT, 0)) AS ACCES_MONTH12
+		FROM TB_SY_ACCES_STATS
+		WHERE SYS_GB = #{sysGb}
+		    AND ACCES_URL = #{accessUrl}
+		    AND ACCES_YEAR = #{accessYear}
+		GROUP BY ACCES_YEAR 
+		ORDER BY ACCES_YEAR DESC
+		
+	</select>
+	
+	<!-- 접속통계 > 일별통계 -->
+	<select id="getAccessLogDay" resultType="emap" parameterType="dmap">
+		SELECT
+		  NVL(ACCES_DAY , DAY)AS ACCES_DAY ,  NVL(T2.ACCES_CNT, 0) CNT
+		FROM
+		  (
+		  	SELECT TO_CHAR( TO_DATE('01', 'DD') + ROWNUM-1, 'DD') AS DAY
+			 FROM DUAL
+			 CONNECT BY level <![CDATA[<=]]> 
+			 <if test='lastDay == "30" '>30</if>
+			 <if test='lastDay == "31" '>31</if>
+			 <if test='lastDay == "28" '>28</if>
+			 <if test='lastDay == "29" '>29</if>
+		  ) T1
+		  LEFT JOIN
+		  (
+		      SELECT ACCES_DAY ACCES_DAY, ACCES_CNT FROM TB_SY_ACCES_STATS
+		      WHERE SYS_GB = #{sysGb}
+		      	AND ACCES_URL = #{accessUrl}
+		      	AND ACCES_YEAR = #{accessYear}
+		      	AND ACCES_MONTH = #{accessMonth}
+		  ) T2
+		  ON T1.DAY = T2.ACCES_DAY
+	</select>
+	
+	<!-- 업체 시도별 가입 통계 -->
+    <select id="getCompanyStats" resultType="emap" parameterType="dmap">
+	    SELECT
+	        T1.VAL SIDO,
+	        NVL(T2.CNT, 0) CNT
+	    FROM
+	        (SELECT VAL2 VAL FROM COPY_T WHERE GB = 'SIDO' GROUP BY VAL2) T1,
+	        (
+	        SELECT
+	            SIDO,
+	            SUM(CNT) CNT
+	        FROM
+	            (
+	            SELECT
+	                NVL((SELECT VAL2 FROM COPY_T WHERE GB = 'SIDO' AND VAL = SIDO), SIDO) SIDO,
+	                COUNT(*) CNT
+	            FROM
+	                (
+	                SELECT TRIM(SUBSTR(ADDR01, 0, INSTR(TRIM(ADDR01), ' ')-1)) SIDO FROM TB_CT_COMPANY WHERE ADDR01 IS NOT NULL
+	                )T2
+	            WHERE SIDO IS NOT NULL
+	            GROUP BY SIDO
+	            )T2
+	        GROUP BY SIDO
+	
+	        ) T2
+	    WHERE
+	        T1.VAL = T2.SIDO (+)
+	    ORDER BY SIDO
+    </select>
+
+    <!-- 관할기관별 가입통계 가입 통계 -->
+    <select id="getCompanyOrgStats" resultType="emap" parameterType="dmap">
+        SELECT T1.MT_SUB_CODE
+               <!-- , CASE WHEN LENGTH(T1.MT_SUB_NAME) > 10
+                   THEN SUBSTR(MT_SUB_NAME,0,6) || REPLACE(SUBSTR(MT_SUB_NAME,7,8), ' ', '<![CDATA[<]]>br<![CDATA[/>]]>')
+                ELSE T1.MT_SUB_NAME
+              END MT_SUB_NAME -->
+              , MT_SUB_NAME
+            , NVL(T2.CNT, 0) CNT
+        FROM (
+            SELECT MT_SUB_NAME, MT_SUB_CODE, ORDR FROM TB_CD_MT_SUB WHERE MT_CODE ='OG' ORDER BY MT_SUB_CODE ASC) T1
+            , (
+                SELECT
+                    MT_ORG_CODE,
+                    SUM(CNT) CNT
+                FROM (
+                      SELECT
+                          NVL((SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_CODE ='OG' AND MT_SUB_CODE = MT_ORG_CODE), MT_ORG_CODE) MT_ORG_CODE,
+                          COUNT(*) CNT
+                      FROM
+                          (
+                            SELECT MT_ORG_CODE FROM TB_CT_COMPANY WHERE MT_ORG_CODE IS NOT NULL
+                          )T2
+                      WHERE MT_ORG_CODE IS NOT NULL
+                      GROUP BY MT_ORG_CODE
+                )T2
+                GROUP BY MT_ORG_CODE
+
+            ) T2
+        WHERE
+            T1.MT_SUB_NAME = T2.MT_ORG_CODE (+)
+        ORDER BY T1.ORDR, T1.MT_SUB_CODE
+    </select>
+    
+    <!-- 지역별 회원가입 통계 -->
+    <select id="getUserAreaStats" resultType="emap" parameterType="dmap">
+	    SELECT
+	        T1.VAL SIDO,
+	        NVL(T2.CNT, 0) CNT
+	    FROM
+	        (SELECT VAL2 VAL FROM COPY_T WHERE GB = 'SIDO' GROUP BY VAL2) T1,
+	        (
+	        SELECT
+	            SIDO,
+	            SUM(CNT) CNT
+	        FROM
+	            (
+	            SELECT
+	                NVL((SELECT VAL2 FROM COPY_T WHERE GB = 'SIDO' AND VAL = SIDO), SIDO) SIDO,
+	                COUNT(*) CNT
+	            FROM
+	                (
+	                    SELECT TRIM(SUBSTR(ADDR01, 0, INSTR(TRIM(ADDR01), ' ')-1)) SIDO
+	                     FROM TB_CT_UNITY_MBER A 
+	                     LEFT OUTER JOIN TB_CT_COMPANY B ON A.COMNO = B.COMNO  
+	                     WHERE ADDR01 IS NOT NULL
+	                )T2
+	            WHERE SIDO IS NOT NULL
+	            GROUP BY SIDO
+	            )T2
+	        GROUP BY SIDO
+	        ) T2
+	    WHERE T1.VAL = T2.SIDO (+)
+	    ORDER BY SIDO
+    </select>
+    
+    <!-- 사업장별 수료통계 리스트 -->
+    <select id="selectCompStats"  resultType="emap" parameterType="dmap">
+        SELECT * FROM (
+        	SELECT
+	            T.*
+	            <!-- , ROW_NUMBER() OVER( ORDER BY CNT_NUM DESC) AS NUM
+	            , ROW_NUMBER() OVER( ORDER BY CNT_NUM ASC) AS RNUM -->
+	            , ROWNUM AS NUM
+            FROM (
+            	SELECT
+                    COMNO
+                    , BIZNO
+                    , COMNAME
+                    , ONLINE_CNT
+                    , ONLINE_ISPASS
+                    , JIB_CNT
+                    , JIB_TARGET
+                    , (ONLINE_CNT+ONLINE_ISPASS+JIB_CNT+JIB_TARGET) AS CNT_NUM
+                FROM ( 
+                	SELECT
+                        C.COMNO
+                        , C.BIZNO
+                        , C.COMNAME
+                        ,(SELECT COUNT(CUSERNO)
+                            FROM TB_LE_COURSE_USER WHERE
+                            USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                                AND USEYN !='N'
+                                AND TO_CHAR(WDATE, 'YYYY') = #{searchYear}
+                            AND CSEQNO IN (SELECT
+                                CSEQNO
+                                FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                                WHERE 1=1
+                                AND A.COURSENO = B.COURSENO
+
+                                AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_CNT <!-- 온라인과정 신청인원수 -->
+                                , (SELECT COUNT(CUSERNO)
+                            FROM TB_LE_COURSE_USER WHERE
+                            USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                            AND USEYN !='N'
+                            AND TO_CHAR(COMPDATE, 'YYYY') = #{searchYear}
+                            AND COMPCODE IS NOT NULL
+                            AND ISPASS = 'Y'
+                            AND CSEQNO IN (SELECT
+                                CSEQNO
+                                FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                                WHERE 1=1
+                                AND A.COURSENO = B.COURSENO
+                                AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_ISPASS <!--  온라인과정 수료인원수 -->
+
+                        , (SELECT COUNT(CUSERNO)
+                            FROM TB_LE_COURSE_USER WHERE
+                            USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                                AND USEYN !='N'
+                                AND TO_CHAR(WDATE, 'YYYY') = #{searchYear}
+                            AND CSEQNO IN (SELECT
+                                CSEQNO
+                                FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                                WHERE 1=1
+                                AND A.COURSENO = B.COURSENO
+                                AND A.MT_CTYPE_CODE = 'DAAA01')) AS JIB_CNT <!-- 집합과정 신청인원수 -->
+                        , (SELECT COUNT(TARGETYN)
+                            FROM TB_LE_COURSE_USER
+                            WHERE 1=1
+                            AND TO_CHAR(WDATE, 'YYYY') = #{searchYear}
+                            AND USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                                AND TARGETYN = 'Y') AS JIB_TARGET <!--  집합과정 선정인원수 -->
+                        FROM TB_CT_COMPANY C, TB_CT_UNITY_MBER M, TB_LE_COURSE_USER L
+
+                        WHERE 1=1
+                        AND C.STATUS_GB = 'Y'
+						<if test="searchWord != null and searchWord != ''">
+						
+                        	<if test="searchMode != null and searchMode == 'comName'">
+                                AND C.COMNAME LIKE '%'||#{searchWord}||'%'
+                            </if>
+                            <if test="searchMode != null and searchMode == 'bizrNo'">
+                                 AND REPLACE(C.BIZNO, '-')  = REPLACE(#{searchWord}, '-')
+                            </if>
+                        </if>
+
+                        AND M.SECSN_AT !='Y'
+                        AND L.USEYN = 'Y'
+                        AND C.COMNO = M.COMNO
+                        AND M.UNITY_MBERNO = L.USERNO
+                    ) A
+                    WHERE 1=1
+                    AND (A.ONLINE_CNT > 0 OR A.ONLINE_ISPASS > 0 OR A.JIB_CNT > 0 OR A.JIB_TARGET > 0)
+                    GROUP BY COMNO, BIZNO,COMNAME, ONLINE_CNT, ONLINE_ISPASS, JIB_CNT, JIB_TARGET
+                    ORDER BY CNT_NUM DESC
+                 ) T
+				ORDER BY CNT_NUM DESC
+          ) AA
+           WHERE 1=1
+           AND NUM BETWEEN #{startNo} AND #{endNo}
+
+    </select>
+    
+    
+    <!-- 사업장별 수료통계 상세 -->
+    <select id="selectCompStatsInfo"  resultType="emap" parameterType="dmap">
+        SELECT
+                C.COMNO
+                , C.BIZNO
+                , C.COMNAME
+                ,(SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                        AND USEYN !='N'
+                        <!-- AND TO_CHAR(WDATE, 'YYYY') = #{searchYear1} -->
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_CNT
+                , (SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                    AND USEYN !='N'
+                    <!-- AND TO_CHAR(COMPDATE, 'YYYY') = #{searchYear1} -->
+                    AND COMPCODE IS NOT NULL
+                    AND ISPASS = 'Y'
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_ISPASS
+
+                , (SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                        AND USEYN !='N'
+                        <!-- AND TO_CHAR(WDATE, 'YYYY') = #{searchYear1} -->
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.MT_CTYPE_CODE = 'DAAA01')) AS JIB_CNT
+                , (SELECT COUNT(TARGETYN)
+                    FROM TB_LE_COURSE_USER
+                    WHERE 1=1
+                    <!-- AND TO_CHAR(WDATE, 'YYYY') = #{searchYear1} -->
+                    AND USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                        AND TARGETYN = 'Y') AS JIB_TARGET
+                , (SELECT COUNT(UNITY_MBERNO)
+	                FROM TB_CT_UNITY_MBER AA
+	                WHERE 1=1) AS COMP_EMP_CNT
+
+                ,(SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                        AND USEYN !='N'
+                        AND TO_CHAR(WDATE, 'YYYY') = #{searchYear1}
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%종사자%'
+
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_CNT_YEAR1_A
+                , (SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                    AND USEYN !='N'
+                    AND TO_CHAR(COMPDATE, 'YYYY') = #{searchYear1}
+                    AND COMPCODE IS NOT NULL
+                    AND ISPASS = 'Y'
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%종사자%'
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_ISPASS_YEAR1_A
+
+                ,(SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                        AND USEYN !='N'
+                        AND TO_CHAR(WDATE, 'YYYY') = #{searchYear2}
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%종사자%'
+
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_CNT_YEAR2_A
+                , (SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                    AND USEYN !='N'
+                    AND TO_CHAR(COMPDATE, 'YYYY') = #{searchYear2}
+                    AND COMPCODE IS NOT NULL
+                    AND ISPASS = 'Y'
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%종사자%'
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_ISPASS_YEAR2_A
+
+                ,(SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                        AND USEYN !='N'
+                        AND TO_CHAR(WDATE, 'YYYY') = #{searchYear3}
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%종사자%'
+
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_CNT_YEAR3_A
+                , (SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                    AND USEYN !='N'
+                    AND TO_CHAR(COMPDATE, 'YYYY') = #{searchYear3}
+                    AND COMPCODE IS NOT NULL
+                    AND ISPASS = 'Y'
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%종사자%'
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_ISPASS_YEAR3_A
+
+                ,(SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                        AND USEYN !='N'
+                        AND TO_CHAR(WDATE, 'YYYY') = #{searchYear4}
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%종사자%'
+
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_CNT_YEAR4_A
+                , (SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                    AND USEYN !='N'
+                    AND TO_CHAR(COMPDATE, 'YYYY') = #{searchYear4}
+                    AND COMPCODE IS NOT NULL
+                    AND ISPASS = 'Y'
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%종사자%'
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_ISPASS_YEAR4_A
+                ,(SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                        AND USEYN !='N'
+                        AND TO_CHAR(WDATE, 'YYYY') = #{searchYear5}
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%종사자%'
+
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_CNT_YEAR5_A
+                , (SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                    AND USEYN !='N'
+                    AND TO_CHAR(COMPDATE, 'YYYY') = #{searchYear5}
+                    AND COMPCODE IS NOT NULL
+                    AND ISPASS = 'Y'
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%종사자%'
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_ISPASS_YEAR5_A
+
+                ,(SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                        AND USEYN !='N'
+                        AND TO_CHAR(WDATE, 'YYYY') = #{searchYear1}
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%취급자%'
+
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_CNT_YEAR1_B
+                , (SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                    AND USEYN !='N'
+                    AND TO_CHAR(COMPDATE, 'YYYY') = #{searchYear1}
+                    AND COMPCODE IS NOT NULL
+                    AND ISPASS = 'Y'
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%취급자%'
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_ISPASS_YEAR1_B
+
+                ,(SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                        AND USEYN !='N'
+                        AND TO_CHAR(WDATE, 'YYYY') = #{searchYear2}
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%취급자%'
+
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_CNT_YEAR2_B
+                , (SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                    AND USEYN !='N'
+                    AND TO_CHAR(COMPDATE, 'YYYY') = #{searchYear2}
+                    AND COMPCODE IS NOT NULL
+                    AND ISPASS = 'Y'
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%취급자%'
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_ISPASS_YEAR2_B
+
+                ,(SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                        AND USEYN !='N'
+                        AND TO_CHAR(WDATE, 'YYYY') = #{searchYear3}
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%취급자%'
+
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_CNT_YEAR3_B
+                , (SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                    AND USEYN !='N'
+                    AND TO_CHAR(COMPDATE, 'YYYY') = #{searchYear3}
+                    AND COMPCODE IS NOT NULL
+                    AND ISPASS = 'Y'
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%취급자%'
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_ISPASS_YEAR3_B
+
+                ,(SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                        AND USEYN !='N'
+                        AND TO_CHAR(WDATE, 'YYYY') = #{searchYear4}
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%취급자%'
+
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_CNT_YEAR4_B
+                , (SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                    AND USEYN !='N'
+                    AND TO_CHAR(COMPDATE, 'YYYY') = #{searchYear4}
+                    AND COMPCODE IS NOT NULL
+                    AND ISPASS = 'Y'
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%취급자%'
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_ISPASS_YEAR4_B
+                ,(SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                        AND USEYN !='N'
+                        AND TO_CHAR(WDATE, 'YYYY') = #{searchYear5}
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%취급자%'
+
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_CNT_YEAR5_B
+                , (SELECT COUNT(CUSERNO)
+                    FROM TB_LE_COURSE_USER WHERE
+                    USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = C.COMNO AND SECSN_AT != 'Y')
+                    AND USEYN !='N'
+                    AND TO_CHAR(COMPDATE, 'YYYY') = #{searchYear5}
+                    AND COMPCODE IS NOT NULL
+                    AND ISPASS = 'Y'
+                    AND CSEQNO IN (SELECT
+                        CSEQNO
+                        FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                        WHERE 1=1
+                        AND A.COURSENO = B.COURSENO
+                        AND A.COURSETITLE LIKE '%취급자%'
+                        AND A.MT_CTYPE_CODE = 'DAAA00')) AS ONLINE_ISPASS_YEAR5_B
+
+
+                FROM TB_CT_COMPANY C
+                WHERE 1=1
+                AND C.STATUS_GB = 'Y'
+                AND C.COMNO = #{comNo}
+    </select>
+
+
+
+    <!-- 사업장별 집합과정 신청/선정 리스트 -->
+    <select id="selectCompJibCourseList" resultType="emap" parameterType="dmap">
+
+        SELECT
+        A.SEQ_TITLE
+        , (SELECT COUNT(CUSERNO)
+                            FROM TB_LE_COURSE_USER WHERE 1=1
+                            AND CSEQNO = A.CSEQNO
+                            AND USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = #{comNo} AND SECSN_AT != 'Y')
+                            AND USEYN !='N'
+								<if test="searchYear != null and searchYear != ''">
+                                    AND TO_CHAR(WDATE, 'YYYY') = #{searchYear}
+                                </if>
+
+                                AND CSEQNO IN (SELECT
+                                CSEQNO
+                                FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+                                WHERE 1=1
+                                AND A.COURSENO = B.COURSENO
+                                AND A.MT_CTYPE_CODE = 'DAAA01')) AS JIB_CNT <!-- 집합과정 신청인원수 -->
+        , (SELECT COUNT(TARGETYN)
+            FROM TB_LE_COURSE_USER
+            WHERE 1=1
+            AND CSEQNO = A.CSEQNO
+            AND USEYN !='N'
+            <if test="searchYear != null and searchYear != ''">
+                AND TO_CHAR(WDATE, 'YYYY') = #{searchYear}
+            </if>
+            AND USERNO IN (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE COMNO = #{comNo} AND SECSN_AT != 'Y')
+                AND TARGETYN = 'Y') AS JIB_TARGET <!-- 집합과정 선정인원수 -->
+
+        FROM TB_ED_COURSE_SEQ A, TB_ED_COURSE B
+        WHERE 1=1
+        AND A.COURSENO = B.COURSENO
+        AND B.USEYN = 'Y'
+        AND B.MT_CTYPE_CODE = 'DAAA01'
+    </select>
+    
+    <!-- 사이버교육운영현황 > 월별 -->
+    <select id="getOnlineList" resultType="emap" parameterType="dmap">
+		SELECT
+			A.*
+			, CASE WHEN (PUBSUMPASS <![CDATA[ > ]]> 0 AND PUBSUMAPPLY <![CDATA[ > ]]> 0) THEN ROUND(PUBSUMPASS/PUBSUMAPPLY*100,2) ELSE 0  END AS PUBPASSPERCENT
+			, CASE WHEN (TEASUMPASS <![CDATA[ > ]]> 0 AND TEASUMAPPLY <![CDATA[ > ]]> 0) THEN ROUND(TEASUMPASS/TEASUMAPPLY*100,2) ELSE 0  END AS TEAPASSPERCENT
+			, CASE WHEN (NOMSUMPASS <![CDATA[ > ]]> 0 AND NOMSUMAPPLY <![CDATA[ > ]]> 0) THEN ROUND(NOMSUMPASS/NOMSUMAPPLY*100,2) ELSE 0  END AS NOMPASSPERCENT
+			, SUM(CNT) OVER() TOTALCOUNT
+		FROM
+		(
+		SELECT 
+					A.YYYY
+					,A.MM
+					,A.COURSENO
+					,(SELECT COURSETITLE FROM TB_ED_COURSE WHERE COURSENO=A.COURSENO) AS COURSETITLE
+					,B.CNT
+					,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX='M'
+						AND BB.MT_GRADE_CODE='AA1000'
+						AND BB.SECSN_AT='N'
+					 ) AS PUBMAPPLY
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX='F'
+						AND BB.MT_GRADE_CODE='AA1000'
+						AND BB.SECSN_AT='N'
+					 ) AS PUBFAPPLY
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX IS NULL
+						AND BB.MT_GRADE_CODE='AA1000'
+						AND BB.SECSN_AT='N'
+					 ) AS PUBXAPPLY
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.MT_GRADE_CODE='AA1000'
+						AND BB.SECSN_AT='N'
+					 ) AS PUBSUMAPPLY
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.ISPASS='Y'
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX='M'
+						AND BB.MT_GRADE_CODE='AA1000'
+						AND BB.SECSN_AT='N'
+					 ) AS PUBMPASS
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.ISPASS='Y'
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX='F'
+						AND BB.MT_GRADE_CODE='AA1000'
+						AND BB.SECSN_AT='N'
+					 ) AS PUBFPASS
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.ISPASS='Y'
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX IS NULL
+						AND BB.MT_GRADE_CODE='AA1000'
+						AND BB.SECSN_AT='N'
+					 ) AS PUBXPASS
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.ISPASS='Y'
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.MT_GRADE_CODE='AA1000'
+						AND BB.SECSN_AT='N'
+					 ) AS PUBSUMPASS
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX='M'
+						AND BB.MT_GRADE_CODE='AA2000'
+						AND BB.SECSN_AT='N'
+					 ) AS TEAMAPPLY
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX='F'
+						AND BB.MT_GRADE_CODE='AA2000'
+						AND BB.SECSN_AT='N'
+					 ) AS TEAFAPPLY
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX IS NULL
+						AND BB.MT_GRADE_CODE='AA2000'
+						AND BB.SECSN_AT='N'
+					 ) AS TEAXAPPLY
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.MT_GRADE_CODE='AA2000'
+						AND BB.SECSN_AT='N'
+					 ) AS TEASUMAPPLY
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.ISPASS='Y'
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX='M'
+						AND BB.MT_GRADE_CODE='AA2000'
+						AND BB.SECSN_AT='N'
+					 ) AS TEAMPASS
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.ISPASS='Y'
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX='F'
+						AND BB.MT_GRADE_CODE='AA2000'
+						AND BB.SECSN_AT='N'
+					 ) AS TEAFPASS
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.ISPASS='Y'
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX IS NULL
+						AND BB.MT_GRADE_CODE='AA2000'
+						AND BB.SECSN_AT='N'
+					 ) AS TEAXPASS
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.ISPASS='Y'
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.MT_GRADE_CODE='AA2000'
+						AND BB.SECSN_AT='N'
+					 ) AS TEASUMPASS
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX='M'
+						AND (BB.MT_GRADE_CODE='AA5000' OR BB.MT_GRADE_CODE='AA4000' OR BB.MT_GRADE_CODE IS NULL)
+						AND BB.SECSN_AT='N'
+					 ) AS NOMMAPPLY
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX='F'
+						AND (BB.MT_GRADE_CODE='AA5000' OR BB.MT_GRADE_CODE='AA4000' OR BB.MT_GRADE_CODE IS NULL)
+						AND BB.SECSN_AT='N'
+					 ) AS NOMFAPPLY
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX IS NULL
+						AND (BB.MT_GRADE_CODE='AA5000' OR BB.MT_GRADE_CODE='AA4000' OR BB.MT_GRADE_CODE IS NULL)
+						AND BB.SECSN_AT='N'
+					 ) AS NOMXAPPLY
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND (BB.MT_GRADE_CODE='AA5000' OR BB.MT_GRADE_CODE='AA4000' OR BB.MT_GRADE_CODE IS NULL)
+						AND BB.SECSN_AT='N'
+					 ) AS NOMSUMAPPLY
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.ISPASS='Y'
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX='M'
+						AND (BB.MT_GRADE_CODE='AA5000' OR BB.MT_GRADE_CODE='AA4000' OR BB.MT_GRADE_CODE IS NULL)
+						AND BB.SECSN_AT='N'
+					 ) AS NOMMPASS
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.ISPASS='Y'
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX='F'
+						AND (BB.MT_GRADE_CODE='AA5000' OR BB.MT_GRADE_CODE='AA4000' OR BB.MT_GRADE_CODE IS NULL)
+						AND BB.SECSN_AT='N'
+					 ) AS NOMFPASS
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.ISPASS='Y'
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND BB.SEX IS NULL
+						AND (BB.MT_GRADE_CODE='AA5000' OR BB.MT_GRADE_CODE='AA4000' OR BB.MT_GRADE_CODE IS NULL)
+						AND BB.SECSN_AT='N'
+					 ) AS NOMXPASS
+					 ,(
+						SELECT COUNT(AA.USERNO)
+						FROM TB_LE_COURSE_USER AA, TB_CT_UNITY_MBER BB 
+						WHERE AA.CSEQNO IN
+							(
+							SELECT CSEQNO 
+							FROM TB_ED_COURSE_SEQ 
+							WHERE COURSENO=A.COURSENO
+							AND TO_CHAR(STUDY_EDATE, 'YYYY')=A.YYYY
+							AND TO_CHAR(STUDY_EDATE, 'MM')=A.MM
+							)
+						AND AA.ISPASS='Y'
+						AND AA.USERNO=BB.UNITY_MBERNO
+						AND (BB.MT_GRADE_CODE='AA5000' OR BB.MT_GRADE_CODE='AA4000' OR BB.MT_GRADE_CODE IS NULL)
+						AND BB.SECSN_AT='N'
+					 ) AS NOMSUMPASS
+					FROM 
+				(
+					SELECT YYYY,MM,COURSENO
+					FROM 
+						(
+							SELECT TO_CHAR(A.STUDY_EDATE, 'YYYY') AS YYYY,TO_CHAR(A.STUDY_EDATE, 'MM') AS MM,A.COURSENO
+							FROM TB_ED_COURSE_SEQ A, TB_ED_COURSE B
+							WHERE A.STUDY_EDATE BETWEEN TO_TIMESTAMP(#{startDate}, 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{endDate}, 'YYYY-MM-DD HH24:MI:SS')
+							AND A.COURSENO=B.COURSENO
+							AND B.MT_CTYPE_CODE='DAAA00'
+							ORDER BY A.COURSENO
+						)
+					GROUP BY COURSENO,YYYY,MM
+				) A
+				JOIN  
+				( 
+							SELECT 
+								TO_CHAR(A.STUDY_EDATE, 'YYYY') AS YYYY
+								,TO_CHAR(A.STUDY_EDATE, 'MM') AS MM 
+								,A.COURSENO
+								,(
+									SELECT COUNT(*)
+									FROM TB_ED_COURSE_SEQ
+									WHERE COURSENO=A.COURSENO
+									AND TO_CHAR(STUDY_EDATE, 'YYYY')=TO_CHAR(A.STUDY_EDATE, 'YYYY')
+									AND TO_CHAR(STUDY_EDATE, 'MM')=TO_CHAR(A.STUDY_EDATE, 'MM') 
+							 ) AS CNT
+							FROM TB_ED_COURSE_SEQ A, TB_ED_COURSE B
+							WHERE A.STUDY_EDATE BETWEEN TO_TIMESTAMP(#{startDate}, 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{endDate}, 'YYYY-MM-DD HH24:MI:SS')
+							AND A.COURSENO=B.COURSENO
+							AND B.MT_CTYPE_CODE='DAAA00'
+							ORDER BY A.COURSENO
+				) B
+				ON(A.COURSENO=B.COURSENO AND A.YYYY=B.YYYY AND A.MM=B.MM)
+				GROUP BY A.YYYY,A.MM,A.COURSENO,B.CNT
+				ORDER BY MM,COURSENO 
+		) A
+    </select>
+    
+    <select id="getOfflineList" resultType="emap" parameterType="dmap">
+    	SELECT 
+	    	A.*
+	    	, ROWNUM AS RNUM
+    	FROM
+    		(
+    			SELECT 
+			    	B.COURSETITLE
+			    	, A.SEQ_TITLE
+			    	, A.SEQ
+			    	, A.STUDY_SDATE
+			    	, A.STUDY_EDATE
+					, (SELECT COUNT(*) FROM TB_LE_COURSE_USER WHERE CSEQNO=A.CSEQNO) AS CNT
+					, A.EDU_PLACE
+				FROM TB_ED_COURSE_SEQ A, TB_ED_COURSE B
+				WHERE
+					A.STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS') 
+				AND A.COURSENO=B.COURSENO
+				AND B.MT_CTYPE_CODE='DAAA01'
+				ORDER BY B.COURSENO,A.CSEQNO, A.SEQ
+    		) A
+    </select>
+    
+    <!-- 사이버교육운영현황 > 월별 -->
+    <select id="getOnlineDetailList" resultType="emap" parameterType="dmap">
+    	SELECT 
+    	*
+    	FROM
+    	(
+    	SELECT
+			A.*
+			, COUNT(*) OVER() TOTALCOUNT
+			, ROWNUM AS RNUM
+		FROM
+		(
+		SELECT 
+			A.MBERNM
+			, A.UNITY_ID 
+			, (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = A.MT_GRADE_CODE) AS MT_GRADE_NAME
+			, CASE A.SEX WHEN 'F' THEN '여' WHEN 'M' THEN '남' ELSE '정보없음' END SEX
+			, A.BRTHDY
+			, '승인' AS TARGETYN
+			, CASE B.USEYN WHEN 'Y' THEN '수강확정' ELSE '취소완료' END USEYN 
+			, TO_CHAR(B.WDATE ,'YYYY-MM-DD HH24:MI:SS') AS WDATE
+			, (SELECT COMNAME FROM TB_CT_COMPANY WHERE COMNO = A.COMNO) AS COMNAME 
+			, A.POSITION_NAME
+			, A.MOBLPHON
+			, A.EMAIL
+			, CASE WHEN B.COMPDATE IS NULL THEN '미수료' ELSE '수료' END COMPYN
+		FROM
+		TB_CT_UNITY_MBER A, TB_LE_COURSE_USER B, TB_ED_COURSE_SEQ C
+		WHERE A.UNITY_MBERNO=B.USERNO
+		AND B.CSEQNO=C.CSEQNO
+		AND C.STUDY_EDATE BETWEEN TO_TIMESTAMP(#{startDate}, 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{endDate}, 'YYYY-MM-DD HH24:MI:SS')
+		AND B.CSEQNO IN 
+			(
+				SELECT D.CSEQNO FROM TB_ED_COURSE_SEQ D 
+				WHERE D.COURSENO = #{courseNo}
+			)
+		AND A.SECSN_AT='N'
+		AND A.MT_GRADE_CODE != 'AA9999'
+		ORDER BY A.MBERNM
+		) A
+		)
+		<choose>
+		<when test="noPage != null and noPage != ''">
+		</when>
+		<otherwise>
+			WHERE RNUM BETWEEN #{startNo} AND #{endNo}  
+		</otherwise>
+		</choose>
+   </select>
+   
+   	<!-- 전체교육운영현황 -->
+    <select id="getTotalCourseUserStats" resultType="emap" parameterType="dmap">
+    	SELECT
+    		A.*
+			,SUM(SEOULCOURSE) OVER() AS SEOULCOURSETOTAL
+			,SUM(SEOULUSER) OVER() AS SEOULUSERTOTAL
+			,SUM(BUSANCOURSE) OVER() AS BUSANCOURSETOTAL
+			,SUM(BUSANUSER) OVER() AS BUSANUSERTOTAL
+			,SUM(GWANGJUCOURSE) OVER() AS GWANGJUCOURSETOTAL
+			,SUM(GWANGJUUSER) OVER() AS GWANGJUUSERTOTAL
+			,SUM(DAEGUCOURSE) OVER() AS DAEGUCOURSETOTAL
+			,SUM(DAEGUUSER) OVER() AS DAEGUUSERTOTAL
+			,SUM(DAEJEONCOURSE) OVER() AS DAEJEONCOURSETOTAL
+			,SUM(DAEJEONUSER) OVER() AS DAEJEONUSERTOTAL
+			,SUM(KANGWONCOURSE) OVER() AS KANGWONCOURSETOTAL
+			,SUM(KANGWONUSER) OVER() AS KANGWONUSERTOTAL
+			,SUM(TOTALCOURSE) OVER() AS TOTALCOURSETOTAL
+			,SUM(TOTALUSER) OVER() AS TOTALUSERTOTAL
+    	FROM
+    	(
+    		SELECT 
+	    		COUNT(A.MT_EDUINFO_CODE) OVER(PARTITION BY A.MT_EDUINFO_CODE) AS ROWSPAN
+	    		, (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE=A.MT_EDUINFO_CODE) AS MT_SUB_NAME
+				, A.COURSETITLE
+				, A.COURSENO
+				,(SELECT COUNT(CSEQNO) 
+				FROM TB_ED_COURSE_SEQ 
+				WHERE COURSENO=A.COURSENO 
+				AND STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS SEOULCOURSE
+				,(SELECT COUNT(AA.CUSERNO) 
+				FROM TB_LE_COURSE_USER AA, TB_ED_COURSE_SEQ BB
+				WHERE AA.CSEQNO=BB.CSEQNO
+				AND BB.CSEQNO IN (SELECT CSEQNO FROM TB_ED_COURSE_SEQ WHERE COURSENO=A.COURSENO)
+				AND BB.STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS SEOULUSER
+				,(SELECT COUNT(CSEQNO) 
+				FROM TB_ED_COURSE_SEQ 
+				WHERE COURSENO=A.COURSENO 
+				AND STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS BUSANCOURSE
+				,(SELECT COUNT(AA.CUSERNO) 
+				FROM TB_LE_COURSE_USER AA, TB_ED_COURSE_SEQ BB
+				WHERE AA.CSEQNO=BB.CSEQNO
+				AND BB.CSEQNO IN (SELECT CSEQNO FROM TB_ED_COURSE_SEQ WHERE COURSENO=A.COURSENO)
+				AND BB.STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS BUSANUSER
+				,(SELECT COUNT(CSEQNO) 
+				FROM TB_ED_COURSE_SEQ 
+				WHERE COURSENO=A.COURSENO 
+				AND STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS GWANGJUCOURSE
+				,(SELECT COUNT(AA.CUSERNO) 
+				FROM TB_LE_COURSE_USER AA, TB_ED_COURSE_SEQ BB
+				WHERE AA.CSEQNO=BB.CSEQNO
+				AND BB.CSEQNO IN (SELECT CSEQNO FROM TB_ED_COURSE_SEQ WHERE COURSENO=A.COURSENO)
+				AND BB.STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS GWANGJUUSER
+				,(SELECT COUNT(CSEQNO) 
+				FROM TB_ED_COURSE_SEQ 
+				WHERE COURSENO=A.COURSENO 
+				AND STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS DAEGUCOURSE
+				,(SELECT COUNT(AA.CUSERNO) 
+				FROM TB_LE_COURSE_USER AA, TB_ED_COURSE_SEQ BB
+				WHERE AA.CSEQNO=BB.CSEQNO
+				AND BB.CSEQNO IN (SELECT CSEQNO FROM TB_ED_COURSE_SEQ WHERE COURSENO=A.COURSENO)
+				AND BB.STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS DAEGUUSER
+				,(SELECT COUNT(CSEQNO) 
+				FROM TB_ED_COURSE_SEQ 
+				WHERE COURSENO=A.COURSENO 
+				AND STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS DAEJEONCOURSE
+				,(SELECT COUNT(AA.CUSERNO) 
+				FROM TB_LE_COURSE_USER AA, TB_ED_COURSE_SEQ BB
+				WHERE AA.CSEQNO=BB.CSEQNO
+				AND BB.CSEQNO IN (SELECT CSEQNO FROM TB_ED_COURSE_SEQ WHERE COURSENO=A.COURSENO)
+				AND BB.STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS DAEJEONUSER
+				,(SELECT COUNT(CSEQNO) 
+				FROM TB_ED_COURSE_SEQ 
+				WHERE COURSENO=A.COURSENO 
+				AND STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS KANGWONCOURSE
+				,(SELECT COUNT(AA.CUSERNO) 
+				FROM TB_LE_COURSE_USER AA, TB_ED_COURSE_SEQ BB
+				WHERE AA.CSEQNO=BB.CSEQNO
+				AND BB.CSEQNO IN (SELECT CSEQNO FROM TB_ED_COURSE_SEQ WHERE COURSENO=A.COURSENO)
+				AND BB.STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS KANGWONUSER
+				,(SELECT COUNT(CSEQNO) 
+				FROM TB_ED_COURSE_SEQ 
+				WHERE COURSENO=A.COURSENO 
+				AND STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS TOTALCOURSE
+				,(SELECT COUNT(AA.CUSERNO) 
+				FROM TB_LE_COURSE_USER AA, TB_ED_COURSE_SEQ BB
+				WHERE AA.CSEQNO=BB.CSEQNO
+				AND BB.CSEQNO IN (SELECT CSEQNO FROM TB_ED_COURSE_SEQ WHERE COURSENO=A.COURSENO)
+				AND BB.STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+				) AS TOTALUSER
+			FROM TB_ED_COURSE A
+			WHERE A.MT_CTYPE_CODE = 'DAAA01'
+			AND A.MT_EDUINFO_CODE IS NOT NULL
+			ORDER BY A.MT_EDUINFO_CODE
+    	) A
+    </select>
+    
+    <!-- 종합통계 -->
+    <!-- <select id="getTotalCourseStats" resultType="emap" parameterType="dmap">
+    		/*getTotalCourseStats*/
+    	     SELECT T.*
+			        ,(CASE WHEN T.REF2='합계' THEN 'ALL'
+			          WHEN T.ABC_CD='교육별소계' AND T.REF3='과정별소계' THEN 'B+B'
+			          WHEN REF3='과정별소계' THEN 'B'
+			          ELSE 'A'
+			          END) TYPE
+			       FROM(SELECT A.REF2
+					        ,(CASE WHEN A.ABC_CD='CYBER' THEN '온라인교육'
+					            WHEN A.ABC_CD='OFFLINE' THEN '집합교육'
+					            ELSE '교육별소계'
+					            END
+					        ) ABC_CD
+					        ,A.REF3
+					        ,NVL(B.MONTH1,0) MONTH1
+					        ,NVL(B.MONTH2,0) MONTH2
+					        ,NVL(B.MONTH3,0) MONTH3
+					        ,NVL(B.MONTH4,0) MONTH4
+					        ,NVL(B.MONTH5,0) MONTH5
+					        ,NVL(B.MONTH6,0) MONTH6
+					        ,NVL(B.MONTH7,0) MONTH7
+					        ,NVL(B.MONTH8,0) MONTH8
+					        ,NVL(B.MONTH9,0) MONTH9
+					        ,NVL(B.MONTH10,0) MONTH10
+					        ,NVL(B.MONTH11,0) MONTH11
+					        ,NVL(B.MONTH12,0) MONTH12
+					        ,NVL(B.TOT_YEAR,0) TOT_YEAR
+					         FROM(SELECT A.*,ROWNUM ORDNO,DENSE_RANK() OVER(ORDER BY REF2 ASC)CATE FROM(SELECT NVL(REF2,'합계')REF2,NVL(ABC_CD,'교육별소계')ABC_CD,NVL(REF3,'과정별소계')REF3 FROM TB_CD_MT_SUB WHERE MT_CODE='SC' GROUP BY ROLLUP(REF2,ABC_CD,REF3))A) A LEFT OUTER JOIN
+					           (SELECT NVL(T.REF2,'합계')REF2
+					              ,NVL(ABC_CD,'교육별소계') ABC_CD
+					              ,NVL(T.REF3,'과정별소계')REF3
+					              ,COUNT(DECODE(TO_CHAR(T.WDATE,'MM'),'01','1'))MONTH1
+					              ,COUNT(DECODE(TO_CHAR(T.WDATE,'MM'),'02','1'))MONTH2
+					              ,COUNT(DECODE(TO_CHAR(T.WDATE,'MM'),'03','1'))MONTH3
+					              ,COUNT(DECODE(TO_CHAR(T.WDATE,'MM'),'04','1'))MONTH4
+					              ,COUNT(DECODE(TO_CHAR(T.WDATE,'MM'),'05','1'))MONTH5
+					              ,COUNT(DECODE(TO_CHAR(T.WDATE,'MM'),'06','1'))MONTH6
+					              ,COUNT(DECODE(TO_CHAR(T.WDATE,'MM'),'07','1'))MONTH7
+					              ,COUNT(DECODE(TO_CHAR(T.WDATE,'MM'),'08','1'))MONTH8
+					              ,COUNT(DECODE(TO_CHAR(T.WDATE,'MM'),'09','1'))MONTH9
+					              ,COUNT(DECODE(TO_CHAR(T.WDATE,'MM'),'10','1'))MONTH10
+					              ,COUNT(DECODE(TO_CHAR(T.WDATE,'MM'),'11','1'))MONTH11
+					              ,COUNT(DECODE(TO_CHAR(T.WDATE,'MM'),'12','1'))MONTH12
+					              ,COUNT(DECODE(TO_CHAR(T.WDATE,'YYYY'),#{searchDate},'1'))TOT_YEAR
+					              FROM(SELECT AA.*
+					                  ,BB.MT_SC_CODE  
+					                  ,(SELECT ABC_CD FROM TB_CD_MT_SUB WHERE MT_SUB_CODE=BB.MT_SC_CODE)ABC_CD   
+					                  ,(SELECT REF1 FROM TB_CD_MT_SUB WHERE MT_SUB_CODE=BB.MT_SC_CODE)REF1
+					                  ,(SELECT REF2 FROM TB_CD_MT_SUB WHERE MT_SUB_CODE=BB.MT_SC_CODE)REF2
+					                  ,(SELECT REF3 FROM TB_CD_MT_SUB WHERE MT_SUB_CODE=BB.MT_SC_CODE)REF3
+					                FROM(SELECT A.CUSERNO
+					                      ,A.CSEQNO
+					                      ,A.WDATE
+					                      ,A.USEYN
+					                      ,B.COURSENO 
+					                      FROM TB_LE_COURSE_USER A LEFT OUTER JOIN 
+					                      TB_ED_COURSE_SEQ B 
+					                      ON A.CSEQNO=B.CSEQNO) AA LEFT OUTER JOIN 
+					                    TB_ED_COURSE BB ON AA.COURSENO=BB.COURSENO
+					                    WHERE AA.USEYN='Y'
+					                    AND TO_CHAR(AA.WDATE,'YYYY')=TO_CHAR(TO_DATE(#{searchDate},'YYYY'),'YYYY')
+					                    ) T
+					                  GROUP BY ROLLUP(REF2,ABC_CD,REF3))B
+				            ON A.REF2=B.REF2 AND A.ABC_CD=B.ABC_CD AND A.REF3=B.REF3
+				            ORDER BY CATE ASC,A.ORDNO ASC)T
+    </select> -->
+    
+    <!-- 종합통계 -->
+    <select id="getTotalCourseCateStats1" resultType="emap" parameterType="dmap">
+    	SELECT REF2,COUNT(REF2)CNT FROM (
+		    SELECT A.*
+		        ,ROWNUM ORDNO
+		        ,DENSE_RANK() OVER(ORDER BY REF2 ASC)CATE 
+		    FROM(SELECT NVL(REF2,'합계')REF2
+		            ,NVL(ABC_CD,'교육별소계')ABC_CD
+		            ,NVL(REF3,'과정별소계')REF3 
+		        FROM TB_CD_MT_SUB 
+		        WHERE MT_CODE='SC' 
+		        GROUP BY ROLLUP(REF2,ABC_CD,REF3))A)T
+		 GROUP BY REF2,CATE ORDER BY CATE ASC
+    </select>
+    <!-- 종합통계 -->
+    <select id="getTotalCourseCateStats2" resultType="emap" parameterType="dmap">
+    	 SELECT REF2,ABC_CD,COUNT(REF2)CNT FROM (
+			    SELECT A.*
+			        ,ROWNUM ORDNO
+			        ,DENSE_RANK() OVER(ORDER BY REF2,ABC_CD ASC)CATE 
+			    FROM(SELECT NVL(REF2,'합계')REF2
+			            ,NVL(ABC_CD,'교육별소계')ABC_CD
+			            ,NVL(REF3,'과정별소계')REF3 
+			        FROM TB_CD_MT_SUB 
+			        WHERE MT_CODE='SC' 
+			        GROUP BY REF2,ABC_CD,REF3)A)T
+			 GROUP BY REF2,ABC_CD,CATE ORDER BY CATE ASC
+    </select>
+    
+    <select id="getTotalCourseUserStats2" resultType="emap" parameterType="dmap">
+    	SELECT
+			NVL(SUM(A.SEOUL),0) AS SEOULCOURSE
+			,NVL(SUM(A.SEOULA),0) AS SEOULUSER
+			,NVL(SUM(A.BUSAN),0) AS BUSANCOURSE
+			,NVL(SUM(A.BUSANA),0) AS BUSANUSER
+			,NVL(SUM(A.GWANGJU),0) AS GWANGJUCOURSE
+			,NVL(SUM(A.GWANGJUA),0) AS GWANGJUUSER
+			,NVL(SUM(A.DAEGU),0) AS DAEGUCOURSE
+			,NVL(SUM(A.DAEGUA),0) AS DAEGUUSER
+			,NVL(SUM(A.DAEJEON),0) AS DAEJEONCOURSE
+			,NVL(SUM(A.DAEJEONA),0) AS DAEJEONUSER
+			,NVL(SUM(A.KANGWON),0) AS KANGWONCOURSE
+			,NVL(SUM(A.KANGWONA),0) AS KANGWONUSER
+			,NVL(SUM(A.TOTAL),0) AS TOTALCOURSE
+			,NVL(SUM(A.TOTALA),0) AS TOTALUSER
+		FROM
+		(
+			SELECT 
+				(SELECT COUNT(SLNO) FROM TB_ED_LECTURE_DATE WHERE SLNO=B.SLNO AND SLNO=A.SLNO AND A.SIDO_CODE='1100000000') AS SEOUL 
+				,(SELECT PERSON_CNT FROM TB_ED_LECTURE WHERE A.SLNO=SLNO AND A.SIDO_CODE='1100000000') AS SEOULA
+				,(SELECT COUNT(SLNO) FROM TB_ED_LECTURE_DATE WHERE SLNO=B.SLNO AND SLNO=A.SLNO AND A.SIDO_CODE='2600000000') AS BUSAN 
+				,(SELECT PERSON_CNT FROM TB_ED_LECTURE WHERE A.SLNO=SLNO AND A.SIDO_CODE='2600000000') AS BUSANA
+				,(SELECT COUNT(SLNO) FROM TB_ED_LECTURE_DATE WHERE SLNO=B.SLNO AND SLNO=A.SLNO AND A.SIDO_CODE='2900000000') AS GWANGJU 
+				,(SELECT PERSON_CNT FROM TB_ED_LECTURE WHERE A.SLNO=SLNO AND A.SIDO_CODE='2900000000') AS GWANGJUA
+				,(SELECT COUNT(SLNO) FROM TB_ED_LECTURE_DATE WHERE SLNO=B.SLNO AND SLNO=A.SLNO AND A.SIDO_CODE='2700000000') AS DAEGU 
+				,(SELECT PERSON_CNT FROM TB_ED_LECTURE WHERE A.SLNO=SLNO AND A.SIDO_CODE='2700000000') AS DAEGUA
+				,(SELECT COUNT(SLNO) FROM TB_ED_LECTURE_DATE WHERE SLNO=B.SLNO AND SLNO=A.SLNO AND A.SIDO_CODE='3000000000') AS DAEJEON 
+				,(SELECT PERSON_CNT FROM TB_ED_LECTURE WHERE A.SLNO=SLNO AND A.SIDO_CODE='3000000000') AS DAEJEONA
+				,(SELECT COUNT(SLNO) FROM TB_ED_LECTURE_DATE WHERE SLNO=B.SLNO AND SLNO=A.SLNO AND A.SIDO_CODE='4200000000') AS KANGWON 
+				,(SELECT PERSON_CNT FROM TB_ED_LECTURE WHERE A.SLNO=SLNO AND A.SIDO_CODE='4200000000') AS KANGWONA
+				,(SELECT COUNT(SLNO) FROM TB_ED_LECTURE_DATE WHERE SLNO=B.SLNO AND SLNO=A.SLNO AND A.SIDO_CODE IS NOT NULL) AS TOTAL 
+				,(SELECT PERSON_CNT FROM TB_ED_LECTURE WHERE A.SLNO=SLNO AND A.SIDO_CODE IS NOT NULL) AS TOTALA
+			FROM  TB_ED_LECTURE A, TB_ED_LECTURE_DATE B
+			WHERE A.MT_LEC_ROUTE_CODE = #{mtScCode}
+			AND A.SLNO=B.SLNO
+			AND B.EDU_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+		) A
+    </select>
+    
+    <select id="getTotalCourseUserStats3" resultType="emap" parameterType="dmap">
+    	SELECT 
+			COUNT(A.CSEQNO) AS CSEQNO
+			, SUM(A.CUSERCNT) AS CUSERCNT
+		FROM
+		(
+			SELECT 
+				A.CSEQNO
+				,(SELECT COUNT(CSEQNO) 
+					FROM TB_LE_COURSE_USER 
+					WHERE CSEQNO=A.CSEQNO
+				) AS CUSERCNT
+			FROM TB_ED_COURSE_SEQ A, TB_ED_COURSE B 
+			WHERE B.MT_CTYPE_CODE = 'DAAA00' 
+			AND A.COURSENO=B.COURSENO
+			AND A.STUDY_EDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00', 'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59', 'YYYY-MM-DD HH24:MI:SS')
+		) A
+		
+    </select>
+    
+    
+    
+    
+    <!-- 방문교육통계  교육통계 -->
+    <select id="getLectureUserStats" resultType="map" parameterType="dmap">
+   		SELECT 
+		    T.*
+		    ,SUM(M01+M02+M03+M04+M05+M06+M07+M08+M09+M10+M11+M12) OVER(PARTITION BY MT_SUB_NAME) AS MTOT
+		    ,SUM(SUM01+SUM02+SUM03+SUM04+SUM05+SUM06+SUM07+SUM08+SUM09+SUM10+SUM11+SUM12) OVER(PARTITION BY MT_SUB_NAME) AS SUMTOT
+		 FROM (
+		     SELECT
+		        NVL(MT_SUB_NAME, '합계') AS MT_SUB_NAME
+		        , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '01', DS_EDATE)) AS M01
+		        , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '02', DS_EDATE)) AS M02
+		        , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '03', DS_EDATE)) AS M03
+		        , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '04', DS_EDATE)) AS M04
+		        , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '05', DS_EDATE)) AS M05
+		        , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '06', DS_EDATE)) AS M06
+		        , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '07', DS_EDATE)) AS M07
+		        , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '08', DS_EDATE)) AS M08
+		        , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '09', DS_EDATE)) AS M09
+		        , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '10', DS_EDATE)) AS M10
+		        , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '11', DS_EDATE)) AS M11
+		        , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '12', DS_EDATE)) AS M12
+		        , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '01', COM_CNT)),0) AS SUM01 
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '02', COM_CNT)),0) AS SUM02
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '03', COM_CNT)),0) AS SUM03
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '04', COM_CNT)),0) AS SUM04
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '05', COM_CNT)),0) AS SUM05
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '06', COM_CNT)),0) AS SUM06
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '07', COM_CNT)),0) AS SUM07
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '08', COM_CNT)),0) AS SUM08
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '09', COM_CNT)),0) AS SUM09
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '10', COM_CNT)),0) AS SUM10
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '11', COM_CNT)),0) AS SUM11
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '12', COM_CNT)),0) AS SUM12
+		     FROM(   
+		         SELECT 
+		            *
+		         FROM (   
+		             SELECT 
+		                MT_SUB_CODE, MT_SUB_NAME 
+		             FROM TB_CD_MT_SUB
+		             WHERE MT_CODE = #{searchType}
+		             AND USEYN = 'Y'
+		         ) T1 
+		            LEFT JOIN TB_ED_LECTURE T2
+		            <choose>
+		            	<when test="searchType == 'TG'">
+		            	ON T1.MT_SUB_CODE = T2.MT_LEC_TARGET_CODE 
+		            	AND TO_CHAR(T2.DS_EDATE,'YYYY') = #{searchDate}
+		            	AND MT_LEC_STATUS_CODE = 'LE0006' /*교육종료*/
+		            	</when>
+		            	<otherwise>
+		            	ON T2.MT_LCTRE_CODE LIKE '%'||T1.MT_SUB_CODE||'%' 
+		            	AND TO_CHAR(T2.DS_EDATE,'YYYY') = #{searchDate}
+		            	AND MT_LEC_STATUS_CODE = 'LE0006' /*교육종료*/
+		            	</otherwise>
+		            </choose>
+		     ) A
+		     GROUP BY CUBE(MT_SUB_NAME)
+		 ) T ORDER BY (CASE MT_SUB_NAME 
+		 					WHEN '합계' THEN 3
+		 					WHEN '기타' THEN 2
+	                       ELSE 1
+	                       END)
+    </select>
+    
+    
+      <!-- 방문교육통계  강사구분통계 -->
+    <select id="getLectureTeacherStats" resultType="map" parameterType="dmap">
+   		 SELECT 
+            T.*
+            ,SUM(M01+M02+M03+M04+M05+M06+M07+M08+M09+M10+M11+M12) OVER(PARTITION BY MT_SUB_NAME) AS MTOT
+            ,SUM(SUM01+SUM02+SUM03+SUM04+SUM05+SUM06+SUM07+SUM08+SUM09+SUM10+SUM11+SUM12) OVER(PARTITION BY MT_SUB_NAME) AS SUMTOT
+         FROM (
+             SELECT
+                NVL(MT_SUB_NAME, '합계') AS MT_SUB_NAME
+               , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '01', DS_EDATE)) AS M01
+                , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '02', DS_EDATE)) AS M02
+                , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '03', DS_EDATE)) AS M03
+                , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '04', DS_EDATE)) AS M04
+                , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '05', DS_EDATE)) AS M05
+                , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '06', DS_EDATE)) AS M06
+                , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '07', DS_EDATE)) AS M07
+                , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '08', DS_EDATE)) AS M08
+                , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '09', DS_EDATE)) AS M09
+                , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '10', DS_EDATE)) AS M10
+                , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '11', DS_EDATE)) AS M11
+                , COUNT(DECODE(TO_CHAR(DS_EDATE,'MM') , '12', DS_EDATE)) AS M12
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '01', COM_CNT)),0) AS SUM01
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '02', COM_CNT)),0) AS SUM02
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '03', COM_CNT)),0) AS SUM03
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '04', COM_CNT)),0) AS SUM04
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '05', COM_CNT)),0) AS SUM05
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '06', COM_CNT)),0) AS SUM06
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '07', COM_CNT)),0) AS SUM07
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '08', COM_CNT)),0) AS SUM08
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '09', COM_CNT)),0) AS SUM09
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '10', COM_CNT)),0) AS SUM10
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '11', COM_CNT)),0) AS SUM11
+                , NVL(SUM(DECODE(TO_CHAR(DS_EDATE,'MM') , '12', COM_CNT)),0) AS SUM12
+             FROM(   
+                 SELECT 
+                    *
+                 FROM (   
+                     SELECT 
+                        MT_SUB_CODE, MT_SUB_NAME 
+                     FROM TB_CD_MT_SUB
+                     WHERE MT_CODE = 'JG'
+                     AND USEYN = 'Y'
+                 ) T1 
+                    LEFT JOIN 
+                        (
+                        SELECT
+                            *
+                        FROM TB_ED_LECTURE A
+                            INNER JOIN TB_ED_LECTURE_TUTOR B ON A.SLNO = B.SLNO AND TO_CHAR(A.DS_EDATE,'YYYY') = #{searchDate}  AND MT_LEC_STATUS_CODE = 'LE0006' /*교육종료*/
+                            INNER JOIN TB_CT_UNITY_MBER C ON B.TUTOR_USERNO = C.UNITY_MBERNO AND B.FINAL_AT = 'Y'
+                        ) T2
+                     ON T1.MT_SUB_CODE = T2.MT_TUTOR_CODE    
+             ) A
+             GROUP BY CUBE(MT_SUB_NAME)
+         ) T    
+    </select>
+    
+     <!-- 방문교육통계  강사통계 -->
+    <select id="getLectureTutorStatsCnt" resultType="int" parameterType="dmap">
+   		SELECT COUNT(*)
+		FROM
+		(SELECT C.MBERNM
+		    ,C.UNITY_ID
+		    ,(SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE=C.MT_TUTOR_CODE) AS MT_TUTOR_NAME   
+		    ,B.APPLY_NM
+		    ,B.APPLY_ORGAN_NM
+		    ,B.EDU_AREA
+		    ,(SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE=B.MT_LEC_TARGET_CODE) AS MT_LEC_TARGET_NAME    
+		    ,B.MT_LCTRE_CODE 
+		    ,TO_CHAR(B.DS_SDATE,'YYYY-MM-DD HH24:MI') AS DS_SDATE
+		    ,TO_CHAR(B.DS_EDATE,'HH24:MI') AS DS_EDATE
+		    ,B.LE_LNM_ZIP
+		    ,B.LE_LNM_ADRES1
+		    ,B.LE_LNM_ADRES2
+		FROM
+		(SELECT * FROM TB_ED_LECTURE_TUTOR WHERE FINAL_AT='Y' AND USEYN='Y') A
+		,(SELECT * FROM TB_ED_LECTURE WHERE MT_LEC_STATUS_CODE IN('LE0006','LE0004')) B
+		,VW_TB_USERS C
+		WHERE A.SLNO = B.SLNO
+		AND A.TUTOR_USERNO=C.UNITY_MBERNO
+		AND B.DS_SDATE BETWEEN TO_DATE(#{sdate},'YYYY-MM-DD') AND TO_DATE(#{edate},'YYYY-MM-DD')
+		<if test="searchMode != null and searchMode != ''">
+        	<if test="searchMode != null and searchMode == 'userId'">
+               AND C.MBERNM LIKE '%'||#{searchWord}||'%'
+            </if>
+            <if test="searchMode != null and searchMode == 'userName'">
+               AND C.UNITY_ID LIKE '%'||#{searchWord}||'%'
+            </if>
+            <if test="searchMode != null and searchMode == 'applyName'">
+               AND B.APPLY_NM LIKE '%'||#{searchWord}||'%'
+            </if>
+            <if test="searchMode != null and searchMode == 'organName'">
+               AND B.APPLY_ORGAN_NM LIKE '%'||#{searchWord}||'%'
+            </if>
+        </if>
+		)T
+    </select>
+    
+     <!-- 방문교육통계  강사통계 -->
+    <select id="getLectureTutorStats" resultType="map" parameterType="dmap">
+   		SELECT TT.*
+		FROM
+   		(SELECT ROWNUM AS RNUM
+		    ,T.*
+		FROM
+		(SELECT C.MBERNM
+		    ,C.UNITY_ID
+		    ,(SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE=C.MT_TUTOR_CODE) AS MT_TUTOR_NAME   
+		    ,B.APPLY_NM
+		    ,B.APPLY_ORGAN_NM
+		    ,B.EDU_AREA
+		    ,(SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE=B.MT_LEC_TARGET_CODE) AS MT_LEC_TARGET_NAME    
+		    ,B.MT_LCTRE_CODE 
+		    ,TO_CHAR(B.DS_SDATE,'YYYY-MM-DD HH24:MI') AS DS_SDATE
+		    ,TO_CHAR(B.DS_EDATE,'HH24:MI') AS DS_EDATE
+		    ,B.LE_LNM_ZIP
+		    ,B.LE_LNM_ADRES1
+		    ,B.LE_LNM_ADRES2
+		FROM
+		(SELECT * FROM TB_ED_LECTURE_TUTOR WHERE FINAL_AT='Y' AND USEYN='Y') A
+		,(SELECT * FROM TB_ED_LECTURE WHERE MT_LEC_STATUS_CODE IN('LE0006','LE0004')) B
+		,VW_TB_USERS C
+		WHERE A.SLNO = B.SLNO
+		AND A.TUTOR_USERNO=C.UNITY_MBERNO
+		AND B.DS_SDATE BETWEEN TO_DATE(#{sdate},'YYYY-MM-DD') AND TO_DATE(#{edate},'YYYY-MM-DD')
+		<if test="searchMode != null and searchMode != ''">
+        	<if test="searchMode != null and searchMode == 'userId'">
+               AND C.UNITY_ID LIKE '%'||#{searchWord}||'%'
+            </if>
+            <if test="searchMode != null and searchMode == 'userName'">
+               AND C.MBERNM LIKE '%'||#{searchWord}||'%'
+            </if>
+            <if test="searchMode != null and searchMode == 'applyName'">
+               AND B.APPLY_NM LIKE '%'||#{searchWord}||'%'
+            </if>
+            <if test="searchMode != null and searchMode == 'organName'">
+               AND B.APPLY_ORGAN_NM LIKE '%'||#{searchWord}||'%'
+            </if>
+        </if>
+		)T)TT
+		<if test="listType != null and listType != 'EXCEL'">
+			WHERE RNUM BETWEEN #{startNo} AND #{endNo} 
+		</if> 
+    </select>
+    
+     <!-- 방문교육통계  강사개인 월별통계 -->
+    <select id="getLectureTutorMonthStatsCnt" resultType="int" parameterType="dmap">
+    	SELECT COUNT(*)
+		FROM
+		(SELECT ROWNUM AS RNUM,T.*
+		FROM
+		(SELECT A.UNITY_MBERNO
+		    ,A.UNITY_ID
+		    ,A.MBERNM 
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '01', B.DS_EDATE)) AS M01
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '02', B.DS_EDATE)) AS M02
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '03', B.DS_EDATE)) AS M03
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '04', B.DS_EDATE)) AS M04
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '05', B.DS_EDATE)) AS M05
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '06', B.DS_EDATE)) AS M06
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '07', B.DS_EDATE)) AS M07
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '08', B.DS_EDATE)) AS M08
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '09', B.DS_EDATE)) AS M09
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '10', B.DS_EDATE)) AS M10
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '11', B.DS_EDATE)) AS M11
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '12', B.DS_EDATE)) AS M12
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '01', B.COM_CNT)),0) AS SUM01 
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '02', B.COM_CNT)),0) AS SUM02
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '03', B.COM_CNT)),0) AS SUM03
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '04', B.COM_CNT)),0) AS SUM04
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '05', B.COM_CNT)),0) AS SUM05
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '06', B.COM_CNT)),0) AS SUM06
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '07', B.COM_CNT)),0) AS SUM07
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '08', B.COM_CNT)),0) AS SUM08
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '09', B.COM_CNT)),0) AS SUM09
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '10', B.COM_CNT)),0) AS SUM10
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '11', B.COM_CNT)),0) AS SUM11
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '12', B.COM_CNT)),0) AS SUM12
+		FROM
+		(SELECT * FROM TB_CT_UNITY_MBER WHERE TUTOR_AT='Y')A
+		LEFT OUTER JOIN
+		(SELECT A.SLNO
+		    ,B.TUTOR_USERNO
+		    ,A.DS_SDATE
+		    ,A.DS_EDATE
+		    ,A.MT_LEC_STATUS_CODE  
+		    ,A.COM_CNT
+		FROM TB_ED_LECTURE A,TB_ED_LECTURE_TUTOR B 
+		WHERE A.SLNO = B.SLNO 
+		AND A.USEYN = 'Y'
+		AND B.USEYN = 'Y'
+		AND B.FINAL_AT='Y'
+		AND A.MT_LEC_STATUS_CODE='LE0006' 
+		AND TO_CHAR(A.DS_SDATE,'YYYY') = #{searchDate})B
+		ON A.UNITY_MBERNO = B.TUTOR_USERNO
+		GROUP BY A.UNITY_MBERNO,A.UNITY_ID,A.MBERNM)T)TT
+    </select>
+    
+     <!-- 방문교육통계  강사개인 월별통계 -->
+    <select id="getLectureTutorMonthStats" resultType="map" parameterType="dmap">
+    	SELECT TT.*
+		FROM
+		(SELECT ROWNUM AS RNUM
+			,T.*
+			,(M01+M02+M03+M04+M05+M06+M07+M08+M09+M10+M11+M12)AS MTOT
+    		,(SUM01+SUM02+SUM03+SUM04+SUM05+SUM06+SUM07+SUM08+SUM09+SUM10+SUM11+SUM12) AS SUMTOT
+		FROM
+		(SELECT A.UNITY_MBERNO
+		    ,A.UNITY_ID
+		    ,A.MBERNM 
+		    ,(SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE =(SELECT MT_TUTOR_CODE FROM TB_CT_UNITY_MBER WHERE UNITY_MBERNO = A.UNITY_MBERNO))AS MT_TUTOR_NAME 
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '01', B.DS_EDATE)) AS M01
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '02', B.DS_EDATE)) AS M02
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '03', B.DS_EDATE)) AS M03
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '04', B.DS_EDATE)) AS M04
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '05', B.DS_EDATE)) AS M05
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '06', B.DS_EDATE)) AS M06
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '07', B.DS_EDATE)) AS M07
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '08', B.DS_EDATE)) AS M08
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '09', B.DS_EDATE)) AS M09
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '10', B.DS_EDATE)) AS M10
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '11', B.DS_EDATE)) AS M11
+		    , COUNT(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '12', B.DS_EDATE)) AS M12
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '01', B.COM_CNT)),0) AS SUM01 
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '02', B.COM_CNT)),0) AS SUM02
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '03', B.COM_CNT)),0) AS SUM03
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '04', B.COM_CNT)),0) AS SUM04
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '05', B.COM_CNT)),0) AS SUM05
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '06', B.COM_CNT)),0) AS SUM06
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '07', B.COM_CNT)),0) AS SUM07
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '08', B.COM_CNT)),0) AS SUM08
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '09', B.COM_CNT)),0) AS SUM09
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '10', B.COM_CNT)),0) AS SUM10
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '11', B.COM_CNT)),0) AS SUM11
+		    , NVL(SUM(DECODE(TO_CHAR(B.DS_EDATE,'MM') , '12', B.COM_CNT)),0) AS SUM12
+		FROM
+		(SELECT * FROM TB_CT_UNITY_MBER WHERE TUTOR_AT='Y')A
+		LEFT OUTER JOIN
+		(SELECT A.SLNO
+		    ,B.TUTOR_USERNO
+		    ,A.DS_SDATE
+		    ,A.DS_EDATE
+		    ,A.MT_LEC_STATUS_CODE  
+		    ,A.COM_CNT
+		FROM TB_ED_LECTURE A,TB_ED_LECTURE_TUTOR B 
+		WHERE A.SLNO = B.SLNO 
+		AND A.USEYN = 'Y'
+		AND B.USEYN = 'Y'
+		AND B.FINAL_AT='Y'
+		AND A.MT_LEC_STATUS_CODE='LE0006' 
+		AND TO_CHAR(A.DS_SDATE,'YYYY') = #{searchDate})B
+		ON A.UNITY_MBERNO = B.TUTOR_USERNO
+		GROUP BY A.UNITY_MBERNO,A.UNITY_ID,A.MBERNM
+		ORDER BY CASE WHEN MT_TUTOR_NAME = '위촉강사(일반)' THEN 1
+                WHEN MT_TUTOR_NAME = '위촉강사(전문)' THEN 2
+                WHEN MT_TUTOR_NAME = '내부강사' THEN 3
+                ELSE 4
+                END
+                ,NVL(SUM(B.COM_CNT),0) DESC)T)TT
+		<if test="listType != null and listType != 'EXCEL'">
+			WHERE RNUM BETWEEN #{startNo} AND #{endNo} 
+		</if> 
+    </select>
+</mapper>

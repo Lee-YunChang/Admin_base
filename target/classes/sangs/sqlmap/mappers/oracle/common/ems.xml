@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.webapp.common.mapper.CommonEmsMapper">
+
+	<resultMap id="syMailManTplClobMap" type="emap">
+       	<result property="CONTENT" column="CONTENT" jdbcType="CLOB" javaType="java.lang.String"/>
+    </resultMap>
+    
+    <!-- 공통코드 조회 -->
+    <select id="selectMtCodeSub" parameterType="dmap" resultType="emap">
+        SELECT MT_SUB_CODE
+            , MT_SUB_NAME
+        FROM TB_CD_MT_SUB
+        WHERE MT_CODE =#{mtCode}
+        AND USEYN = 'Y'
+        ORDER BY ORDR, MT_SUB_CODE
+    </select>
+    
+    <!-- 메일 템플릿 조회 -->
+	<select id="getSyMailTplInfo" resultMap="syMailManTplClobMap" parameterType="String"> 
+		SELECT 
+			TITLE, CONTENT  
+		FROM 
+			TB_SY_MAIL_TPL 
+		WHERE 
+			TPL_UID = #{TPL_UID} 
+		AND 
+			USEYN='Y'   
+		AND   
+			ROWNUM =  1  
+	</select> 
+	
+	
+	<!-- SMS 템플릿 조회 -->
+	<select id="getSySmsTplInfo" parameterType="String" resultType="emap">
+	     SELECT 
+			CONTENT  
+		 FROM 
+			TB_SY_SMS_TPL 
+		 WHERE 
+			TPL_UID = #{tplUid} 
+		 AND  USEYN='Y'   
+		 AND  ROWNUM =  1   
+	</select> 
+
+    <!-- MMS 발송 등록  -->
+    <insert id="insertEmTranMms" parameterType="com.webapp.common.vo.SendMsgVO">
+        <selectKey keyProperty="mmsSeq" resultType="java.lang.Integer" order="BEFORE">
+            SELECT NVL(MAX(MMS_SEQ),0)+1 mmsSeq
+              FROM EM_TRAN_MMS
+        </selectKey>
+        INSERT INTO EM_TRAN_MMS 
+            ( 
+                MMS_SEQ,
+                FILE_CNT,
+                MMS_BODY,
+                MMS_SUBJECT  
+             )
+        VALUES
+             (  
+                #{mmsSeq}, 
+                0, 
+                #{message},
+                null    <!-- 메세지 타이틀 -->
+             )
+    </insert>
+    
+    <!-- SMS 발송 등록  -->
+    <insert id="insertEmTran" parameterType="com.webapp.common.vo.SendMsgVO">
+        <selectKey keyProperty="tranPr" resultType="java.lang.Integer" order="BEFORE">
+            SELECT NVL(MAX(TRAN_PR),0)+1 tranPr
+              FROM EM_TRAN
+        </selectKey>
+        INSERT INTO EM_TRAN 
+            ( 
+                TRAN_PR,
+                TRAN_PHONE,
+                TRAN_CALLBACK,
+                TRAN_STATUS,
+                TRAN_DATE,
+                TRAN_TYPE
+            <if test='tranType == "4"'>
+                ,TRAN_MSG
+            </if>
+            <if test='tranType == "6"'>
+                ,TRAN_ETC4
+            </if>
+             )
+        VALUES
+             (  
+                #{tranPr}, 
+                #{rcvphns}, 
+                #{callback},
+                '1',
+            <!-- 예약 발송 처리 -->
+            <if test='isreserve == "Y"'>
+                TO_DATE(#{reserveDate}||#{reserveHour}||#{reserveMinute}||'00', 'YYYYMMDDHH24MISS'),
+            </if>
+            <if test='isreserve != "Y"'>
+                SYSDATE,
+            </if>
+                #{tranType}
+            <if test='tranType == "4"'>
+                ,#{message}
+            </if>
+            <if test='tranType == "6"'>
+                ,#{mmsSeq}
+            </if>
+             )
+    </insert>
+	
+	<!-- 메세제 발송 로그 등록  -->
+	<insert id="insertSySmsLog" parameterType="com.webapp.common.vo.SendMsgVO">
+	 	INSERT INTO TB_SY_SMS_LOG 
+	 		( 
+	 			SEQ, REC_USERNAME, REC_USERID,
+	 			REC_HP, STATUS, SEND_TYPE,
+	 			
+	 			SUMMARY,
+	 			
+	 			SEND_DATE,
+	 			
+	 			SEND_USERID,
+	 			CALLBACK,
+	 			RESERVEYN,
+	 			RESERVE_DATE,
+                TRAN_TYPE,
+                TRAN_PR
+             )
+		VALUES
+			 (  
+			 	(SELECT NVL(MAX(SEQ),0)+1 AS MAX FROM TB_SY_SMS_LOG), 
+			 	#{recUsername}, #{recUserid}, 
+			 	#{rcvphns}, #{resultCode}, #{sendType}, 
+			 	#{message}, 
+			 	SYSDATE, 
+			 	#{sendUserid}, 
+			 	#{callback}, 
+			 	#{isreserve},
+			 	TO_TIMESTAMP( #{reserveDate} ,'yyyy-mm-dd hh24:mi:ss'),
+                #{tranType},
+                #{tranPr}
+			 )
+	</insert>
+
+	
+	<select id="getMsgBatchLogCnt" parameterType="string" resultType="int">
+   	  	SELECT COUNT(1) FROM TB_SY_MSG_BATCH_LOG WHERE YMD = #{nowDate}
+	</select> 
+	
+	
+	<select id="getMsgBatchLeCourseUserList" parameterType="string" resultType="emap">
+		SELECT 
+			B.SEQ_TITLE
+			, D.UNITY_ID AS USERID
+			, D.MBERNM AS USERNAME
+			, D.MOBLPHON AS MOBILE
+			, D.EMAIL
+			, TO_CHAR(B.STUDY_SDATE, 'YYYY-MM-DD') AS STUDY_SDATE
+            , TO_CHAR(B.STUDY_EDATE, 'YYYY-MM-DD') AS STUDY_EDATE
+		FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B, LE_COURSE_USER C, TB_CT_UNITY_MBER D
+		WHERE A.COURSENO = B.COURSENO
+		AND   B.CSEQNO   = C.CSEQNO 
+		AND   C.USERNO   = D.UNITY_MBERNO
+		AND   A.MT_CTYPE_CODE = 'DAAA00'       				 <!-- 이러닝 과정 -->
+		AND   B.MT_CSEQ_STATUS_CODE <![CDATA[<>]]>  'DEDA00' <!-- 폐강이 아닌경우만 -->
+		AND   C.USEYN = 'Y'                     			 <!-- 수강 승인인 회원만 -->
+	    <choose>
+	        <when test="_parameter != null and _parameter != ''">
+	            <if test="_parameter == '201'">
+	                AND TO_CHAR(STUDY_SDATE, 'YYYYMMDD') = TO_CHAR(SYSDATE, 'YYYYMMDD')
+	            </if>
+	            <if test="_parameter == '202'">
+	                AND TO_CHAR(STUDY_SDATE+TRUNC((STUDY_EDATE-STUDY_SDATE)/2),'YYYYMMDD') = TO_CHAR(SYSDATE, 'YYYYMMDD')
+	            </if>
+	            <if test="_parameter == '203'">
+	                AND TO_CHAR(STUDY_EDATE, 'YYYYMMDD') = TO_CHAR(SYSDATE, 'YYYYMMDD')
+	            </if>
+	        </when>
+	        <otherwise>
+	                AND TO_CHAR(STUDY_EDATE, 'YYYYMMDD') = '99991231'
+	        </otherwise>
+	    </choose>
+
+	</select>
+
+	<insert id="insertMsgBatchLog" parameterType="dmap">
+		INSERT INTO TB_SY_MSG_BATCH_LOG (YMD, SVRCD, SDATE, EDATE, MAIL_CNT, SMS_CNT, LOG)
+		VALUES(#{ymd},#{svrcd},TO_TIMESTAMP(#{sdate}, 'YYYY-MM-DD HH24:MI:SS'),TO_TIMESTAMP(#{edate}, 'YYYY-MM-DD HH24:MI:SS'),#{mailCnt},#{smsCnt},#{logFlag})
+	</insert>
+    
+    <!-- 발송순번 -->
+    <select id="getSyMailLogMailSeqMaxInfo" resultType="int" >
+        SELECT NVL(MAX(MAIL_SEQ),0)+1 AS MAX   
+          FROM TB_SY_MAIL_LOG 
+    </select>
+    
+    <!-- 발송 등록  -->
+    <insert id="insertSyMailLog" parameterType="com.webapp.common.vo.SendMailVO">
+        <selectKey keyProperty="mailSeq" resultType="int" order="BEFORE">
+            SELECT NVL(MAX(MAIL_SEQ),0)+1   
+              FROM TB_SY_MAIL_LOG
+        </selectKey>
+        INSERT INTO TB_SY_MAIL_LOG 
+            ( 
+                MAIL_SEQ
+                , WRITER_USERID
+                , WRITER_USERNAME
+                , WRITER_IP
+                , SENDER_USERNAME
+                , SENDER_EMAIL
+                , SEND_DATE
+                , TITLE
+                , SUMMARY
+                , TPL_UID 
+            )
+        VALUES 
+            (  
+                #{mailSeq}
+                , #{writerUserid}
+                , #{writerUsername}
+                , #{writerIp}
+                , #{sender}
+                , #{sender_alias}
+                , SYSDATE
+                , #{title}
+                , #{content}
+                , #{tplUid} 
+            )
+    </insert>
+
+    <insert id="insertSyMailLogRec" parameterType="com.webapp.common.vo.SendMailVO">
+        INSERT INTO TB_SY_MAIL_REC 
+            (
+                MAIL_SEQ
+                ,REC_SEQ
+                ,REC_USERNAME
+                ,REC_USERID
+                ,REC_EMAIL
+                ,RECYN
+                ,REC_DATE
+                ,SUCCCYN
+                ,SUMMARY 
+            )
+        VALUES 
+            (
+                #{mailSeq}
+                , (SELECT NVL(MAX(REC_SEQ),0)+1 AS MAX  FROM TB_SY_MAIL_REC   WHERE MAIL_SEQ = #{mailSeq})
+                , #{recUsername}
+                , #{recUserid}
+                , #{recEmail}
+                , #{recyn}
+                , SYSDATE
+                , #{succcyn}
+                , #{content}  
+            )
+    </insert>
+	
+    <insert id="insertMailLog" parameterType="dmap">
+		INSERT INTO TB_SY_MAIL_LOG 
+			(
+				MAIL_SEQ
+				, WRITER_USERID
+				, WRITER_USERNAME
+				, WRITER_IP
+				, SENDER_USERNAME
+				, SENDER_EMAIL
+				, SEND_DATE
+				, TITLE
+				, SUMMARY
+			)
+		VALUES 
+			(
+				#{seq}
+				, #{SES_USERID}
+				, #{SES_USERNAME}
+				, #{writerIp}
+				, #{sender_username}
+				, #{sender_mailaddr}
+				, SYSDATE
+				, #{subject}
+				, #{content}
+			)
+    </insert>
+    
+    <insert id="insertMailLogRec" parameterType="dmap">
+		INSERT INTO  TB_SY_MAIL_REC 
+			(
+				MAIL_SEQ
+				, REC_SEQ
+				, REC_USERNAME
+				, REC_USERID
+				, REC_EMAIL
+				, SUCCCYN
+				, SUMMARY 
+				, REC_DATE
+				, RECYN
+				<if test="secsnMailYn != null and secsnMailYn != ''">
+				, SECSN_MAIL_YN
+	            </if>
+			)
+		VALUES 
+			(
+				#{seq}
+				, #{recSeq}
+				, #{userName}
+				, #{userId}
+				, #{email}
+				, 'Y'
+				, #{content}
+				, SYSDATE
+				, 'Y'
+				<if test="secsnMailYn != null and secsnMailYn != ''">
+				, #{secsnMailYn}
+	            </if>
+			)
+    </insert>
+    
+    <select id="getMaxMailSeq" parameterType="dmap" resultType="int">
+    	SELECT NVL(MAX(MAIL_SEQ),0)+1 FROM TB_SY_MAIL_LOG
+    </select>
+    
+    <select id="getMaxMailSeqRec" parameterType="dmap" resultType="int">
+    	SELECT NVL(MAX(REC_SEQ),0)+1 FROM TB_SY_MAIL_REC
+    </select> 
+</mapper>

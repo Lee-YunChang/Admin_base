@@ -1,0 +1,593 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminCommonMapper">
+
+	<resultMap id="syEmsTplClobMap" type="emap">
+		<result property="TITLE" column="TITLE" />
+        <result property="CONTENT" column="CONTENT" jdbcType="CLOB" javaType="java.lang.String"/>
+    </resultMap>
+
+<!-- 대분류 메뉴 리스트 -->
+    <select id="getCmmnRootMenuList" parameterType="dmap" resultType="emap">
+	    SELECT AA.*
+		    , BB.SUB_CODE
+		    , ( CASE
+		          WHEN DEFAULT_URL = '' THEN 
+		          	(SELECT link FROM TB_CD_MENU M WHERE M.MENU_CODE LIKE AA.MENU_CODE || '%' 
+                    	AND M.USE_STATE='Y' 
+                   		AND LINK IS NOT NULL
+                    	AND LINK <![CDATA[ <> ]]> ''
+                 		AND ROWNUM = 1)
+		          ELSE DEFAULT_URL
+		          END ) AS DEFAULT_LINK
+		FROM ( 
+			SELECT 
+			      <!-- ROW_NUMBER() OVER(PARTITION BY P_MENU_CODE ORDER BY TO_NUMBER(T1.ORDR) ASC) RNUM  -->
+			    ROWNUM AS RNUM
+                , T1.MENU_CODE
+			    , T1.MENU_NAME
+			    , LINK as  DEFAULT_URL
+			    , T1.ORDR
+			    , T1.P_MENU_CODE
+			FROM TB_CD_MENU T1, TB_CD_MENU_GRADE T2
+			WHERE  T2.GRADE_CODE = #{menuGradeCode} 
+			AND T2.USEYN = 'Y' 
+			AND T1.SYS_GB = T2.SYS_GB 
+			AND T1.MENU_CODE = T2.MENU_CODE 
+			AND T1.SYS_GB = 'ADM' 
+			AND T1.MENU_DIV = 1 
+			AND T1.USE_STATE = 'Y' 
+			ORDER BY P_MENU_CODE, TO_NUMBER(T1.ORDR) ASC
+		) AA
+		LEFT OUTER JOIN (                   
+	        SELECT 
+	        	LINK
+	            , MENU_CODE AS SUB_CODE
+	            , P_MENU_CODE
+	        FROM TB_CD_MENU 
+	        WHERE USE_STATE = 'Y'   
+	        AND MENU_DIV  = 2
+	        AND ORDR = 1
+	        AND SYS_GB = 'ADM'
+	        ORDER BY P_MENU_CODE, TO_NUMBER(ORDR) ASC  
+		) BB ON BB.P_MENU_CODE = AA.MENU_CODE 
+		WHERE 1=1
+		ORDER BY AA.MENU_CODE, AA.ORDR 
+    </select>
+    
+    <!-- 소분류 메뉴 리스트 -->
+    <select id="getCmmnSubMenuList" parameterType="dmap" resultType="emap">
+	     SELECT 
+		      T1.MENU_CODE
+		    , T1.MENU_NAME 
+		    , T1.MENU_DIV
+		    , CASE WHEN T1.LINK = '' THEN NULL ELSE T1.LINK END AS LINK
+		    , T1.P_MENU_CODE
+		    , T1.ORDR
+		FROM TB_CD_MENU T1, TB_CD_MENU_GRADE T2
+		WHERE T2.GRADE_CODE = #{menuGradeCode} 
+		AND T2.USEYN = 'Y' AND T1.SYS_GB = T2.SYS_GB AND T1.MENU_CODE = T2.MENU_CODE 
+		AND T1.SYS_GB = 'ADM' AND T1.P_MENU_CODE LIKE #{cmmnRootMenuCode} ||'%' 
+		AND T1.MENU_DIV > 1 
+		AND T1.USE_STATE = 'Y' 
+		ORDER BY TO_NUMBER(T1.ORDR), T1.MENU_DIV 
+    </select>
+    
+    <!-- 메뉴정보 -->
+	<select id="getCmmnRootMenuInfo" parameterType="dmap" resultType="emap">
+		SELECT 
+			AA.*
+			, BB.SUB_CODE
+		FROM (		
+				SELECT 
+					 T1.MENU_CODE
+				    , T1.MENU_NAME 
+				    , T1.MENU_DIV
+				    , T1.LINK
+				    , T1.P_MENU_CODE
+				FROM TB_CD_MENU T1 
+				WHERE SYS_GB = 'ADM' 
+				AND T1.MENU_CODE = #{cmmnRootMenuCode}
+				ORDER BY MENU_CODE, TO_NUMBER(T1.ORDR)
+			) AA
+			LEFT OUTER JOIN (                   
+		        SELECT 
+		        	ROW_NUMBER() OVER(ORDER BY MENU_CODE, TO_NUMBER(ORDR) ASC) AS RNUM
+		            , LINK
+		            , MENU_CODE AS SUB_CODE
+		            , P_MENU_CODE
+		        FROM TB_CD_MENU 
+		        WHERE USE_STATE = 'Y' 
+		        AND	P_MENU_CODE =  #{cmmnRootMenuCode}
+		)  BB ON BB.P_MENU_CODE = AA.MENU_CODE AND BB.RNUM = 1
+	</select> 
+	
+	<!-- 상단메뉴에 따른 첫번째메뉴 OR 선택한 메뉴 정보 -->
+	<select id="getCurrentMenuInfo" parameterType="dmap" resultType="emap">
+		SELECT AA.*
+			, BB.SUB_CODE
+		FROM (
+		    SELECT LEV, MENU_CODE, MENU_NAME
+		            , P_MENU_CODE, ORDR  
+		            <!-- , ROW_NUMBER() OVER(ORDER BY ORDR ASC) RNUM -->
+			    	, ROWNUM AS RNUM 
+		        FROM (
+		            SELECT
+		                LEVEL AS LEV  
+		                , MENU_CODE                              
+		                , MENU_NAME
+		                , P_MENU_CODE  
+		                , ORDR                     
+		            FROM TB_CD_MENU                
+		            WHERE USE_STATE = 'Y' 
+	            	START WITH MENU_CODE = #{cmmnSubMenuCode} 
+		        	CONNECT BY PRIOR MENU_CODE = P_MENU_CODE                     
+		    ) A
+		    WHERE 1=1      
+		    AND	MENU_CODE = #{cmmnSubMenuCode}
+		    ORDER BY ORDR ASC
+		) AA
+		LEFT OUTER JOIN (                   
+		        SELECT 
+		        	ROW_NUMBER() OVER(PARTITION BY P_MENU_CODE ORDER BY MENU_CODE, TO_NUMBER(ORDR) ASC) RNUM
+		            , LINK
+		            , MENU_CODE AS SUB_CODE
+		            , P_MENU_CODE
+		        FROM TB_CD_MENU 
+		        WHERE USE_STATE = 'Y' 
+		        AND	P_MENU_CODE = #{cmmnSubMenuCode}   
+		        ORDER BY P_MENU_CODE, TO_NUMBER(ORDR) ASC 
+		)  BB ON BB.P_MENU_CODE = AA.MENU_CODE AND BB.RNUM = 1
+        WHERE AA.RNUM = 1  
+	</select>
+	
+	
+	<!-- 권한코드 리스트 -->
+    <select id="getMtSubCodeList" parameterType="dmap" resultType="emap">
+	     SELECT MT_CODE
+	       <choose>
+				 <when test="getNumType != null and getNumType != ''">
+					, TO_NUMBER(MT_SUB_CODE) AS MT_SUB_CODE
+				</when>
+				<otherwise>
+		            , MT_SUB_CODE
+				</otherwise>
+			</choose> 
+            , MT_SUB_NAME
+            , NUM_CD
+            , ABC_CD
+            , ORDR
+            , USEYN
+        FROM TB_CD_MT_SUB
+        WHERE MT_CODE=#{mtCode}  
+        AND USEYN ='Y'
+        <if test="abcCd != null and abcCd != ''">
+        	AND ABC_CD = #{abcCd}
+        </if>
+        <if test="ref1 != null and ref1 != ''">
+        	AND REF1 = #{ref1}
+        </if>
+        <if test="ref2 != null and ref2 != ''">
+        	AND REF2 = #{ref2}
+        </if>
+        <if test="ref3 != null and ref3 != ''">
+        	AND REF3 = #{ref3}
+        </if>
+         <choose>
+			 <when test="getNumType != null and getNumType != ''">
+				ORDER BY MT_SUB_CODE ASC
+			</when>
+			<otherwise>
+		        ORDER BY ORDR, MT_SUB_CODE ASC
+			</otherwise>
+		</choose>
+    </select>
+    
+    <!-- 과정중 과정분류 -->
+    <select id="getMtScCodeList" parameterType="dmap" resultType="emap">
+	     SELECT MT_CODE
+            , MT_SUB_CODE
+            , MT_SUB_NAME
+            , NUM_CD
+            , ABC_CD
+            , ORDR
+            , USEYN
+        FROM TB_CD_MT_SUB
+        WHERE MT_CODE=#{mtCode}  
+        AND USEYN ='Y'
+        <if test="mtSubCode != null and mtSubCode != ''">
+        AND MT_SUB_CODE IN (${mtSubCode}) 
+        </if>
+        ORDER BY ORDR, MT_SUB_CODE ASC
+    </select>
+    
+    <!-- 과정중 강의형태(일반과정) 목록-->
+    <select id="getMtNormalCtypeList" parameterType="dmap" resultType="emap">
+        SELECT
+            MT_CODE
+            , MT_SUB_CODE
+            , MT_SUB_NAME
+            , NUM_CD
+            , ABC_CD
+        FROM
+            TB_CD_MT_SUB
+        WHERE
+            MT_CODE = 'DA' AND ABC_CD = 'NORM'  AND USEYN ='Y'
+        ORDER BY MT_SUB_CODE ASC
+    </select>
+    
+    <!-- 메일 템플릿 조회 -->
+	<select id="getEmEmailTplInfo" resultMap="syEmsTplClobMap" parameterType="dmap"> 
+		SELECT TITLE, CONTENT  
+		FROM TB_SY_MAIL_TPL 
+		WHERE TPL_UID = #{tplUid} 
+		AND USEYN='Y'   
+		AND ROWNUM =  1  
+	</select> 
+	
+	<!-- 메일 발송자 정보 조회 -->
+	<select id="getSyEmailSenderInfo" parameterType="dmap" resultType="emap">
+		SELECT MT_SUB_CODE, MT_SUB_NAME
+		FROM TB_CD_MT_SUB WHERE MT_CODE = 'UB' 
+		AND USEYN = 'Y'
+		<if test="mtMailSendCode != null and mtMailSendCode != ''">
+			AND MT_SUB_CODE = #{mtMailSendCode}
+		</if>
+	</select> 
+	
+	<select id="getSyEmailSenderInfo2" resultType="emap"  parameterType="dmap" >
+		SELECT
+           B.EMAIL
+        FROM  TB_CT_UNITY_MBER B
+	      <if test="usernoArr != null and usernoArr != ''">
+			WHERE (B.UNITY_ID IN
+			<foreach collection="usernoArr" item="item" open="(" close=")" separator="," index="index">
+    			#{item}
+    		</foreach>
+    		)
+		</if>
+	</select>
+	
+	<!-- SMS 콜백번호 조회 -->
+	<select id="getSySmsCallbackInfo" parameterType="dmap" resultType="String">
+		SELECT MT_SUB_NAME
+		FROM TB_CD_MT_SUB WHERE MT_CODE = 'UC' AND USEYN = 'Y' AND ROWNUM = 1
+	</select> 
+	
+	
+	<!-- SMS 템플릿 조회 -->
+	<select id="getEmSmsTplInfo" parameterType="dmap" resultType="String">
+		SELECT 	CONTENT
+		FROM 	TB_SY_SMS_TPL
+		WHERE 	TPL_UID = #{tplUid} AND USEYN='Y' AND ROWNUM =  1   
+	</select> 
+	
+	<!-- 이메일 목록 호출 -->
+	<select id="getLeCourseUserList" resultType="emap"  parameterType="dmap" >
+		SELECT
+           A.USERID
+           , B.MBERNM AS USERNAME
+           , B.MOBLPHON AS MOBILE
+           , B.EMAIL
+        FROM TB_LE_COURSE_USER A, VW_TB_USERS B
+	       WHERE A.USERNO= B.UNITY_MBERNO
+	       AND A.CSEQNO = #{cseqno}
+	       AND A.USEYN = 'Y'
+	       <if test="onlyMailGrp !=null and onlyMailGrp !=''">
+	       AND B.EMAIL IS NOT NULL  
+	       </if>
+	       <if test="targetYn !=null and targetYn !=''">
+	       AND A.TARGETYN='Y'
+	       </if>
+	       ORDER BY B.MBERNM ASC
+	</select>
+	
+	<!-- 이메일 목록 호출 -->
+  <select id="getCheckedReceiverList" resultType="emap"  parameterType="dmap" >
+	  	SELECT 
+		  	UNITY_MBERNO
+		  	, UNITY_ID
+		  	, MBERNM 
+		  	, EMAIL
+		  	, MOBLPHON
+	  	FROM TB_CT_UNITY_MBER 
+	  	WHERE UNITY_ID = #{usernoArr}
+	  		<if test="onlyMailGrp !=null and onlyMailGrp !=''">
+	  		AND EMAIL IS NOT NULL
+	  		</if>
+  </select>
+  
+	<!-- 우편번호 조회 -->
+    <select id="getPostcodeList" resultType="emap"  parameterType="dmap" >
+        SELECT *
+          FROM (
+                SELECT POSTCODE
+                       , SIDO ||' '|| GUGUN ||' '|| DONG ||' '|| BUNJI AS ADDR
+                       , ROWNUM AS RNUM
+                       , COUNT(1) OVER() TOTALCNT
+                  FROM MT_POSTCODE
+             <if test="searchWord != null and searchWord != ''">
+                 WHERE SIDO||''||GUGUN||''||DONG||''||BUNJI LIKE '%'|| #searchWord# ||'%'
+             </if>
+             <if test="searchWord == null">
+                 WHERE SIDO||''||GUGUN||''||DONG||''||BUNJI = ''
+             </if>
+                ORDER BY POSTNO
+               )
+        WHERE 1=1
+        <if test="startNo != null and startNo != ''">
+          AND RNUM BETWEEN #{startNo} AND #{endNo}
+        </if>
+    </select>
+	
+	<select id="getSurveyList" parameterType="dmap" resultType="emap">
+		SELECT
+			ROWNUM AS RNUM,
+			POLLCSEQNO,
+			TITLE,
+			TO_CHAR(SDATE, 'YYYY-MM-DD') SDATE,
+			TO_CHAR(EDATE, 'YYYY-MM-DD') EDATE,
+			CNT,
+			USEYN,
+			SUMMARY,
+			WRITER,
+			TO_CHAR(WDATE, 'YYYY-MM-DD') WDATE
+		FROM
+			TB_LE_POLL
+		WHERE CSEQNO = #{cseqno}
+             	<if test="searchWord != null and searchWord != ''">
+                  <if test="searchMode == 'writer'">
+	                   AND WRITER LIKE '%'||#{searchWord}||'%'
+	            </if>
+	            <if test="searchMode == 'title'">
+	                   AND TITLE LIKE '%'||#{searchWord}||'%'
+	            </if>
+			</if>
+		ORDER BY POLLCSEQNO DESC
+    </select>
+    
+    <select id="getCourseInfo" parameterType="dmap" resultType="emap">
+    	SELECT 
+			SEQ_TITLE
+			, (SELECT COUNT(*) FROM TB_LE_COURSE_USER VV, VW_TB_USERS ZZ WHERE VV.USERNO = ZZ.UNITY_MBERNO AND VV.CSEQNO = A.CSEQNO AND VV.USEYN = 'Y') AS ONLINE_STUDY_USER_CNT
+			, (SELECT COUNT(*) FROM TB_LE_COURSE_USER VV, VW_TB_USERS ZZ WHERE VV.USERNO = ZZ.UNITY_MBERNO AND VV.CSEQNO = A.CSEQNO AND VV.USEYN = 'Y' AND VV.TARGETYN = 'Y') AS OFFLINE_STUDY_USER_CNT
+			, (SELECT COUNT(*) FROM TB_LE_COURSE_USER VV, VW_TB_USERS ZZ 
+				WHERE VV.USERNO = ZZ.UNITY_MBERNO AND VV.CSEQNO = A.CSEQNO 
+				AND VV.USEYN = 'Y' 
+				AND VV.TARGETYN = 'Y') APPLY_USER_CNT
+			, B.MT_CTYPE_CODE
+    	 FROM
+     	    TB_ED_COURSE_SEQ A, TB_ED_COURSE B
+    	 WHERE A.CSEQNO=#{cseqno} 
+   		  AND A.COURSENO = B.COURSENO 
+    </select>
+    
+    <select id="getMaxSmsSeq" parameterType="dmap" resultType="int">
+    	SELECT NVL(MAX(SEQ),0)+1 FROM TB_SY_SMS_LOG
+    </select>
+    
+    <select id="getMaxMmsSeq" parameterType="dmap" resultType="int">
+    	SELECT NVL(MAX(CONT_SEQ),0)+1 FROM TB_MMS_CONTENTS 
+    </select>
+    
+    <insert id="insertSmsLog" parameterType="dmap">
+		INSERT INTO TB_SY_SMS_LOG 
+			(
+				SEQ
+				<if test="recUserName != null and recUserName != ''">
+				, REC_USERNAME
+				</if>
+				<if test="recUserId != null and recUserId != ''">
+				, REC_USERID
+				</if>
+				, REC_HP
+				, SUMMARY
+				, SEND_DATE
+				, SEND_USERID
+				, CALLBACK
+				, RESERVEYN
+				<if test="isReserve != null and isReserve != ''">
+					<if test="set_senddate != null and set_senddate != ''">
+					, RESERVE_DATE
+					</if>
+				</if>
+				<if test="tplUid != null and tplUid != ''">
+					, TPL_UID
+				</if>
+				, TRAN_TYPE
+				,STATUS
+				<if test="sendType != null and sendType != ''">
+				, SEND_TYPE
+				</if>
+				)
+		VALUES 
+			(
+				#{seq}
+				<if test="recUserName != null and recUserName != ''">
+				, #{recUserName}
+				</if>
+				<if test="recUserId != null and recUserId != ''">
+				, #{recUserId}
+				</if>
+				, #{recHp}
+				, #{smsbody}
+				, SYSDATE
+				, #{SES_USERID}
+				, #{callback}
+				 <choose>
+   					 <when test="isReserve != null and isReserve != ''">
+					, 'Y'
+					</when>
+					<otherwise>
+					, 'N'
+					</otherwise>
+				</choose>
+				<if test="isReserve != null and isReserve != ''">
+					<if test="set_senddate != null and set_senddate != ''">
+						, (SELECT TO_TIMESTAMP(#{set_senddate},'YYYY-MM-DD HH24:MI'))
+					</if>
+				</if>
+				<if test="tplUid != null and tplUid != ''">
+					, #{tplUid}
+				</if>
+				, #{tranType}
+				, #{status}
+				<if test="sendType != null and sendType != ''">
+				, (SELECT NVL(MAX(FILE_ID),0) FROM TB_SMS_FILE)
+				</if>
+			)
+    </insert>
+    
+    <insert id="insertSmsData" parameterType="dmap">
+    	INSERT INTO MCS_AGENT.SDK_SMS_SEND
+		    (MSG_ID
+		    , USER_ID
+		    , SUBJECT
+		    , SMS_MSG
+		    , CALLBACK_URL
+		    , NOW_DATE
+		    , SEND_DATE
+		    , CALLBACK
+		    , DEST_INFO
+		    , DEST_COUNT
+		    ) VALUES (
+		     MCS_AGENT.SDK_SMS_SEQ.nextval
+		     ,'SMS_TEST_ID'
+		     , ''
+		     , #{smsbody}
+		     , ''
+		     , TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')
+		     , TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')
+		     , #{callback}
+		     , #{userInfo}
+		     , #{msgCnt})
+    </insert>
+    
+    <insert id="insertMmsData" parameterType="dmap">
+    	INSERT INTO MCS_AGENT.SDK_MMS_SEND
+		    ( MSG_ID
+		    , USER_ID
+		    , SCHEDULE_TYPE
+		    , SUBJECT
+		    , NOW_DATE
+		    , SEND_DATE
+		    , CALLBACK
+		    , DEST_COUNT
+		    , DEST_INFO
+		    , MSG_TYPE
+		    , MMS_MSG
+		    , CONTENT_COUNT
+		    , CONTENT_DATA
+		    ) VALUES (
+		    MCS_AGENT.SDK_MMS_SEQ.nextval
+		    , 'test_id'
+		    , 0
+		    , '서민금융진흥원 MMS발송'
+		    , TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')
+		    , TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')
+		    , #{callback}
+		    , #{msgCnt}
+		    , #{userInfo}
+		    , 0
+		    , #{smsbody}
+		    , 0
+		    , '')
+    </insert>
+    
+    <!-- sms수신자 정보조회 -->
+    <select id="getRecList" parameterType="dmap" resultType="emap">
+    	SELECT 
+			MBERNM
+			,UNITY_ID
+			,MOBLPHON 
+		FROM VW_TB_USERS
+		WHERE 1=1
+		<if test="unityId != null and unityId != ''">
+		AND UNITY_ID = #{unityId}
+		</if>
+		<if test="unityMberno != null and unityMberno != ''">
+		AND UNITY_MBERNO = #{unityMberno}
+		</if>
+    </select>
+    
+     <!-- 위원회관리 파일삭제 -->
+    <delete id="deleteLectureFile" parameterType="dmap">
+    	DELETE FROM TB_ED_LECTURE_FILE
+		WHERE SLNO = #{slno}
+		AND MT_TUTOR_FILE_CODE = #{mtTutorFileCode} 
+		AND SAVFILE = #{saveFile}
+    </delete>
+    
+    <!-- sms템플릿 목록 조회 -->
+    <select id="getSMSTamplate" parameterType="dmap" resultType="emap">
+    	SELECT * FROM TB_SY_SMS_TPL WHERE USEYN = 'Y'
+    </select>
+    
+     <!-- 데이터가 있으면 UPDATE, 없으면 INSERT 처리 -->
+    <insert id="insertuserListExcel" parameterType="dmap">
+        MERGE INTO TB_CT_UNITY_MBER A
+        USING DUAL
+            ON ( A.UNITY_ID = #{unityId}
+        )
+        WHEN MATCHED THEN
+         UPDATE SET
+            A.MBERNM = #{mberNm}
+            , A.EMAIL = #{email}
+            , A.MT_JOB_KND_CODE = #{mtJobkindCode}
+            , A.RGSDE = #{rgsde}
+            , A.TUTOR_AT = #{tutorAt}
+        WHEN NOT MATCHED THEN
+         INSERT (UNITY_ID,MBERNM,EMAIL,RGSDE,MT_JOB_KND_CODE)
+         VALUES (
+             #{unityId}, #{mberNm}, #{email}, SYSDATE
+             , #{mtJobkindCode})
+    </insert>
+    
+    <!-- 지점 코드 조회 -->
+    <select id="selectmtOfficeCode" parameterType="string" resultType="string">
+    	SELECT MT_SUB_CODE FROM TB_CD_MT_SUB WHERE TRIM(MT_SUB_NAME) = TRIM(#{mtOfficeCode}) AND MT_CODE='OF'
+    </select>
+    
+    <!-- 유저번호 최대값+1 호출 -->
+    <select id="getMaxMberNo" resultType="Integer" parameterType="dmap">
+        SELECT SEQ_TB_USERS.NEXTVAL AS MAX_USERNO  FROM DUAL
+    </select>
+    
+    <!-- 데이터가 있으면 UPDATE, 없으면 INSERT 처리 -->
+    <insert id="insertnmberListExcel" parameterType="dmap">
+        MERGE INTO TB_CT_NONMBER A
+        USING DUAL
+            ON ( A.MBERNM = #{mberNm}
+            	AND MOBLPHON = #{mobilphon}
+            	AND BRTHDY = #{brthdy}
+        )
+        WHEN MATCHED THEN
+         UPDATE SET
+            A.SEX = #{sex}
+            , A.UPDDE = SYSDATE
+            , A.MT_OFFICE_CODE = #{mtOfficeCode}
+            , A.MT_GRADE_CODE = #{mtJobkindCode}
+            , A.SECSN_AT = #{secsnAt}
+        WHEN NOT MATCHED THEN
+         INSERT (UNITY_MBERNO,BRTHDY,MBERNM,SEX,MOBLPHON,REGDATE,REGNO,MT_GRADE_CODE,MT_OFFICE_CODE,SECSN_AT)
+         VALUES (
+             #{unityMberno}, #{brthdy}, #{mberNm}, #{sex}, #{mobilphon}
+             , SYSDATE, #{SES_USERNO}, #{mtJobkindCode}, #{mtOfficeCode}, #{secsnAt})
+    </insert>
+    
+    <!-- 강사결과보고 파일 -->
+    <select id="getTutorFile" parameterType="dmap" resultType="emap">
+    	SELECT B.FILENO
+    		, B.SLNO
+    		, B.ORGFILE
+    		, B.SAVFILE
+    		, B.FSIZE
+    		, B.FTYPE
+    		, B.SAVPATH
+    		, B.MT_TUTOR_FILE_CODE 
+    	FROM TB_ED_LECTURE A,TB_ED_LECTURE_FILE B 
+    	WHERE A.SLNO = B.SLNO 
+    	AND A.SLNO = #{slno}
+    </select>
+</mapper>

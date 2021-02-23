@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminSmsmanMapper">
+    
+ 	<!-- SMS 템플릿관리 목록 리스트 -->
+    <select id="getSySmsTplList" resultType="emap" parameterType="dmap">
+    	SELECT  
+            TPLNO
+            , TPLNAME
+            , CONTENT
+            , USEYN
+            , TPL_UID
+            , ROW_NUMBER() OVER(ORDER BY TPLNO ASC) AS NUM
+        FROM TB_SY_SMS_TPL
+     	ORDER BY TPLNO DESC
+    </select>
+
+    <!-- SMS 템플릿관리 팝업 상세정보 -->
+    <select id="getSySmsTplInfo" parameterType="dmap" resultType="emap">
+        SELECT TPLNO , TPLNAME, CONTENT , USEYN,TPL_UID
+         FROM TB_SY_SMS_TPL
+        WHERE TPLNO=#{tplno}
+    </select>
+    
+    
+    <!-- SMS 템플릿관리 목록 MAX TPLNO 추출 -->
+    <select id="getSySmsTplTplnoMaxInfo" resultType="int" >
+        SELECT NVL(MAX(TPLNO),0)+1 AS "MAX"
+          FROM TB_SY_SMS_TPL
+    </select>
+
+
+    <!-- SMS 템플릿관리 (등록 실행)  -->
+    <insert id="insertSySmsTplInfo" parameterType="dmap">
+         INSERT INTO TB_SY_SMS_TPL ( TPLNO,TPLNAME, CONTENT,  USEYN, TPL_UID )
+        VALUES ( #{tplno},#{tplname},  #{content}, #{useyn}, #{tplUid} )
+    </insert>
+    
+    
+    <!-- SMS 템플릿관리 (수정 실행)  -->
+    <update id="updateSySmsTplInfo" parameterType="dmap">
+        UPDATE TB_SY_SMS_TPL
+            SET  TPLNAME = #{tplname}, CONTENT = #{content}, USEYN = #{useyn}, TPL_UID=#{tplUid}
+        WHERE TPLNO = #{tplno}
+    </update>
+        
+    <!-- SMS 템플릿관리 (삭제 실행)  -->
+    <delete id="smsDeleteExec" parameterType="dmap">
+       DELETE FROM TB_SY_SMS_TPL
+		WHERE TPLNO = #{tplno}
+    </delete>
+    
+    <!-- SMS 발송목록관리 리스트 -->
+    <select id="getSySmsLogList" resultType="emap" parameterType="dmap">
+		SELECT 
+			*
+<!-- 			, ROW_NUMBER() OVER(ORDER BY RNUM ASC) AS NUM  -->
+		FROM 
+			(
+				SELECT 
+ 					  ROW_NUMBER() OVER(ORDER BY SEQ DESC) AS  RNUM
+ 					, COUNT(*) OVER() AS TOTALCOUNT
+ 					, SEQ
+ 					, REC_USERNAME
+ 					, REC_USERID
+ 					, REC_HP
+ 					, STATUS
+ 					, SEND_TYPE
+ 					, SUMMARY
+ 					, SEND_DATE
+ 					, SEND_USERID
+ 					, CALLBACK
+ 					, RESERVEYN
+ 					, RESERVE_DATE
+ 					, TPL_UID
+ 					, TRAN_TYPE
+ 					, TRAN_PR 
+ 				FROM 
+ 					TB_SY_SMS_LOG 
+ 					  WHERE 1=1 
+				   <if test="sdate != null and sdate != ''"> 
+		                <if test="edate != null and edate != ''"> 
+		                    AND TO_CHAR(SEND_DATE,'YYYYMMDD') BETWEEN REPLACE(#{sdate},'-', '') AND REPLACE(#{edate},'-', '')
+		                </if>
+		            </if>
+		            <if test="searchWord != null and searchWord != ''">
+		                <if test="searchMode == 'TRAN_PHONE'"> AND REC_HP LIKE '%'||#{searchWord}||'%' </if>
+		                <if test="searchMode == 'TRAN_CALLBACK'"> AND CALLBACK LIKE '%'||#{searchWord}||'%' </if>
+		            </if>
+			ORDER BY SEQ DESC
+		) 
+		<if test="startNo != null and startNo != '0'"> 
+	          WHERE RNUM BETWEEN #{startNo} AND #{endNo}
+		</if>
+    </select>
+    
+    
+    <!-- SMS 발송목록관리 상세 팝업 -->
+    <select id="getSySmsLogInfo" resultType="emap" parameterType="dmap">
+    		SELECT 
+ 					SEQ
+ 					, REC_USERNAME
+ 					, REC_USERID
+ 					, REC_HP
+ 					, STATUS
+ 					, SEND_TYPE
+ 					, SUMMARY
+ 					, SEND_DATE
+ 					, SEND_USERID
+ 					, CALLBACK
+ 					, RESERVEYN
+ 					, RESERVE_DATE
+ 					, TPL_UID
+ 					, TRAN_TYPE
+ 					, TRAN_PR 
+ 				FROM 
+ 					TB_SY_SMS_LOG 
+ 					  WHERE 1=1 
+ 					 <if test="seq != null and seq != '0'"> 
+ 					 AND SEQ = #{seq}
+ 					 </if>
+    </select>
+</mapper>

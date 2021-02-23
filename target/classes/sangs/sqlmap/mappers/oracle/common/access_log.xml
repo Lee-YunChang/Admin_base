@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.webapp.common.mapper.CommonAccessLogMapper">
+
+
+	<!-- 접속로그 정보 등록 -->
+	<insert id="insertAccessLogInfo" parameterType="dmap">
+        INSERT INTO TB_SY_ACCES_LOG (
+			  ACCES_SEQ
+			, SYS_GB
+			, ACCES_URL 
+			, ACCES_USERID 
+			, ACCES_IP 
+			, ACCES_DATE 
+			, ACCES_YEAR
+		) VALUES(
+			  (SELECT NVL(MAX(ACCES_SEQ),0) + 1 FROM TB_SY_ACCES_LOG)
+			, #{sysGb}
+			, #{accesUrl}
+			, #{accesUserId}
+			, #{accesIp}
+			, SYSDATE
+			, TO_CHAR(SYSDATE, 'YYYY')
+		)
+    </insert>
+	
+	<!-- 접속로그 등록여부 확인용 -->
+	<select id="getAccesLogStatsCount" parameterType="dmap" resultType="Integer">
+		SELECT COUNT(*) FROM TB_SY_ACCES_STATS WHERE 
+			SYS_GB = #{sysGb}
+			AND ACCES_URL = #{accesUrl}
+			AND ACCES_YEAR = TO_CHAR(SYSDATE, 'YYYY')
+			AND ACCES_MONTH = TO_CHAR(SYSDATE, 'MM')
+			AND ACCES_DAY = TO_CHAR(SYSDATE, 'DD')
+	</select>
+	
+	<!-- 접속로그 통계 정보 등록 -->
+	<insert id="insertAccessLogStatsInfo"  parameterType="dmap">
+		INSERT INTO TB_SY_ACCES_STATS (
+			SYS_GB, ACCES_URL, ACCES_YEAR, ACCES_MONTH, ACCES_DAY, ACCES_CNT
+		) VALUES(
+			  #{sysGb}
+			, #{accesUrl}
+			, TO_CHAR(SYSDATE, 'YYYY')
+			, TO_CHAR(SYSDATE, 'MM')
+			, TO_CHAR(SYSDATE, 'DD')
+			, 1
+		)
+	</insert>
+	
+	<!-- 접속로그통계 갱신 -->
+	<update id="updateAccessLogStatsInfo"  parameterType="dmap">
+		UPDATE TB_SY_ACCES_STATS SET ACCES_CNT = ACCES_CNT + 1 
+		WHERE 
+			  SYS_GB = #{sysGb}
+			AND ACCES_URL = #{accesUrl}
+			AND ACCES_YEAR = TO_CHAR(SYSDATE, 'YYYY')
+			AND ACCES_MONTH = TO_CHAR(SYSDATE, 'MM')
+			AND ACCES_DAY = TO_CHAR(SYSDATE, 'DD')
+	</update>
+	
+</mapper>

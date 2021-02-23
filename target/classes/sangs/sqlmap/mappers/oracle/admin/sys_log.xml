@@ -1,0 +1,590 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminSysLogMapper">
+
+    <!-- 인증 로그 조회 -->
+    <select id="getMbrLoginLogList" parameterType="dmap" resultType="emap">
+          SELECT * FROM
+            (SELECT a.*, ROWNUM AS "RNUM" FROM
+                (
+                        SELECT
+                            SYS_GB
+                            , DECODE (SYS_GB, 'WWW', '학습시스템', 'ADM', '관리자시스템', '-') AS "SYS_GB_NAME"
+                            , TRANS_USERNO
+                            , TRANS_USERID
+                            , TRANS_USERNAME
+                            , TRANS_IP
+                            , TRANS_GB
+                            , DECODE (TRANS_GB, 'S', '인증성공', 'F', '인증실패', 'O','로그아웃', '-') AS "TRANS_GB_NAME"
+                            , TO_CHAR(TRANS_DT,'YYYY-MM-DD HH24:MI:SS') AS "TRANS_DT"
+                            , SUMMARY
+                        FROM
+                            TB_SY_LOGIN_LOG
+                        WHERE 1=1
+
+                        <if test="sysGb != null and sysGb != ''">
+                            AND SYS_GB = #{sysGb}
+                        </if>
+
+                        <if test="transGb != null and transGb != ''">
+                            AND TRANS_GB = #{transGb}
+                        </if>
+
+                        <if test="sdate != null and sdate != ''">
+                            <if test="edate != null and edate != ''">
+                                AND TO_CHAR(TRANS_DT,'YYYYMMDD') BETWEEN REPLACE(#{sdate},'-', '') AND REPLACE(#{edate},'-', '')
+                            </if>
+                        </if>
+
+                        <if test="searchWord != null and searchWord != ''">
+                            <if test='searchMode != null and searchMode != "" and searchMode == "TRANS_USERID" '>
+                                AND TRANS_USERID LIKE '%'||#{searchWord}||'%'
+                            </if>
+                            <if test='searchMode != null and searchMode != "" and searchMode == "TRANS_IP" '>
+                                AND TRANS_IP LIKE '%'||#{searchWord}||'%'
+                            </if>
+                        </if>
+                       ORDER BY TRANS_DT DESC
+                 ) A WHERE 1=1
+                ) B
+         <if test="startNo != null and startNo != '0' and listType != 'EXCEL' ">
+            WHERE RNUM BETWEEN #{startNo} AND #{endNo}
+        </if>
+    </select>
+
+    <!-- 인증 로그 조회 (count) -->
+    <select id="getMbrLoginLogListCount" parameterType="dmap" resultType="int">
+          SELECT COUNT(*) AS "TOTAL" FROM
+            (SELECT a.*, ROWNUM AS "RNUM" FROM
+                (
+                        SELECT
+                            SYS_GB
+                            , DECODE (SYS_GB, 'WWW', '학습시스템', 'ADM', '관리자시스템', '-') AS "SYS_GB_NAME"
+                            , TRANS_USERNO
+                            , TRANS_USERID
+                            , TRANS_USERNAME
+                            , TRANS_IP
+                            , TRANS_GB
+                            , DECODE (TRANS_GB, 'S', '인증성공', 'F', '인증실패', 'O','로그아웃', '-') AS "TRANS_GB_NAME"
+                            , TO_CHAR(TRANS_DT,'YYYY-MM-DD HH24:MI:SS') AS "TRANS_DT"
+                            , SUMMARY
+                        FROM
+                            TB_SY_LOGIN_LOG
+                        WHERE 1=1
+
+                        <if test="sysGb != null and sysGb != ''">
+                            AND SYS_GB = #{sysGb}
+                        </if>
+
+                        <if test="transGb != null and transGb != ''">
+                            AND TRANS_GB = #{transGb}
+                        </if>
+
+                        <if test="sdate != null and sdate != ''">
+                            <if test="edate != null and edate != ''">
+                                AND TO_CHAR(TRANS_DT,'YYYYMMDD') BETWEEN REPLACE(#{sdate},'-', '') AND REPLACE(#{edate},'-', '')
+                            </if>
+                        </if>
+
+                        <if test="searchWord != null and searchWord != ''">
+                            <if test='searchMode != null and searchMode != "" and searchMode == "TRANS_USERID" '>
+                                AND TRANS_USERID LIKE '%'||#{searchWord}||'%'
+                            </if>
+                            <if test='searchMode != null and searchMode != "" and searchMode == "TRANS_IP" '>
+                                AND TRANS_IP LIKE '%'||#{searchWord}||'%'
+                            </if>
+                        </if>
+                       ORDER BY TRANS_DT DESC
+                 ) A WHERE 1=1
+                ) B
+    </select>
+
+    <!-- 회원 정보 열람 조회 -->
+    <select id="getMbrTransLogList" parameterType="dmap" resultType="emap">
+         SELECT * FROM
+        (SELECT a.*, ROWNUM AS RNUM FROM
+            (
+                    SELECT
+                        SYS_GB
+                        , DECODE (SYS_GB, 'WWW', '학습시스템', 'ADM', '관리자시스템', '-') AS SYS_GB_NAME
+                        , TRANS_USERNO
+                        , TRANS_USERID
+                        , TRANS_USERNAME
+                        , TRANS_IP
+                        , TRANS_GB
+                        , DECODE (TRANS_GB, 'C', '등록', 'R', '조회', 'U','수정', 'D', '삭제', 'P', '출력', '-') AS TRANS_GB_NAME
+                        , TO_CHAR(TRANS_DT,'YYYY-MM-DD HH24:MI:SS') AS TRANS_DT
+                        , SUMMARY
+                        , PROG_ID
+                        , PROG_NM
+                    FROM
+                        TB_SY_TRANS_LOG
+                    WHERE 1=1
+                    <if test="sysGb != null and sysGb != ''">
+                        AND SYS_GB = #{sysGb}
+                    </if>
+
+                    <if test="transGb != null and transGb != ''">
+                        AND TRANS_GB = #{transGb}
+                    </if>
+
+                    <if test="sdate != null and sdate != ''  ">
+                        <if test="edate != null and edate != ''">
+                         AND TO_CHAR(TRANS_DT,'YYYYMMDD') BETWEEN REPLACE(#{sdate},'-', '') AND REPLACE(#{edate},'-', '')
+                        </if>
+                    </if>
+
+                    <if test="searchWord != null and searchWord != ''">
+                        <if test='searchMode != null and searchMode != "" and searchMode == "TRANS_USERID" '>
+                            AND TRANS_USERID LIKE '%'||#{searchWord}||'%'
+                        </if>
+                        <if test='searchMode != null and searchMode != "" and searchMode == "TRANS_IP" '>
+                            AND TRANS_IP LIKE '%'||#{searchWord}||'%'
+                        </if>
+                    </if>
+                   ORDER BY TRANS_DT DESC
+             ) A WHERE 1=1
+               ) B
+       <if test="startNo != null and startNo != '0' and listType != 'EXCEL' ">
+           WHERE RNUM BETWEEN #{startNo} AND #{endNo}
+        </if>
+    </select>
+
+    <!-- 회원 정보 열람 조회(count) -->
+    <select id="getMbrTransLogListCount" parameterType="dmap" resultType="int">
+        SELECT COUNT(*) AS TOTAL FROM
+        (SELECT a.*, ROWNUM AS RNUM FROM
+            (
+                    SELECT
+                        SYS_GB
+                        , DECODE (SYS_GB, 'WWW', '학습시스템', 'ADM', '관리자시스템', '-') AS SYS_GB_NAME
+                        , TRANS_USERNO
+                        , TRANS_USERID
+                        , TRANS_USERNAME
+                        , TRANS_IP
+                        , TRANS_GB
+                        , DECODE (TRANS_GB, 'C', '등록', 'R', '조회', 'U','수정', 'D', '삭제', 'P', '출력', '-') AS TRANS_GB_NAME
+                        , TO_CHAR(TRANS_DT,'YYYY-MM-DD HH24:MI:SS') AS TRANS_DT
+                        , SUMMARY
+                        , PROG_ID
+                        , PROG_NM
+                    FROM
+                        TB_SY_TRANS_LOG
+                    WHERE 1=1
+                    <if test="sysGb != null and sysGb != ''">
+                        AND SYS_GB = #{sysGb}
+                    </if>
+
+                    <if test="transGb != null and transGb != ''">
+                        AND TRANS_GB = #{transGb}
+                    </if>
+
+                    <if test="sdate != null and sdate != ''  ">
+                        <if test="edate != null and edate != ''">
+                         AND TO_CHAR(TRANS_DT,'YYYYMMDD') BETWEEN REPLACE(#{sdate},'-', '') AND REPLACE(#{edate},'-', '')
+                        </if>
+                    </if>
+
+                    <if test="searchWord != null and searchWord != ''">
+                        <if test='searchMode != null and searchMode != "" and searchMode == "TRANS_USERID" '>
+                            AND TRANS_USERID LIKE '%'||#{searchWord}||'%'
+                        </if>
+                        <if test='searchMode != null and searchMode != "" and searchMode == "TRANS_IP" '>
+                            AND TRANS_IP LIKE '%'||#{searchWord}||'%'
+                        </if>
+                    </if>
+                   ORDER BY TRANS_DT DESC
+             ) a WHERE 1=1
+               ) B
+    </select>
+
+    <!-- 권한변경로그 조회 -->
+    <select id="getMbrGradeLogList" parameterType="dmap" resultType="emap">
+         SELECT * FROM
+        (SELECT a.*, ROWNUM AS RNUM FROM
+            (
+                    SELECT
+                        SYS_GB
+                        , DECODE (SYS_GB, 'WWW', '학습시스템', 'ADM', '관리자시스템', '-') AS SYS_GB_NAME
+                        , TG_USERNO
+                        , TG_USERID
+                        , TG_USERNAME
+                        , TG_GRADE_CODE
+                        , TRANS_USERNO
+                        , TRANS_USERID
+                        , TRANS_USERNAME
+                        , TRANS_IP
+                        , TO_CHAR(TRANS_DT,'YYYY-MM-DD HH24:MI:SS') AS TRANS_DT
+                        , SUMMARY
+                    FROM
+                        TB_SY_GRADE_LOG
+                    WHERE 1=1
+                    <if test="sysGb != null and sysGb != ''">
+                        AND SYS_GB = #{sysGb}
+                    </if>
+                    <if test="sdate != null and sdate != '' and edate != null and edate != '' ">
+                        AND TO_CHAR(TRANS_DT,'YYYYMMDD') BETWEEN REPLACE(#{sdate},'-', '') AND REPLACE(#{edate},'-', '')
+                    </if>
+
+                    <if test="searchWord != null and searchWord != ''">
+                        <if test='searchMode != null and searchMode != "" and searchMode == "TG_USERID" '>
+                            AND TG_USERID LIKE '%'||#{searchWord}||'%'
+                        </if>
+                        <if test='searchMode != null and searchMode != "" and searchMode == "TRANS_USERID" '>
+                            AND TRANS_USERID LIKE '%'||#{searchWord}||'%'
+                        </if>
+                        <if test='searchMode != null and searchMode != "" and searchMode == "TRANS_IP" '>
+                            AND TRANS_IP LIKE '%'||#{searchWord}||'%'
+                        </if>
+                    </if>
+
+                       ORDER BY TRANS_DT DESC
+             ) A WHERE 1=1
+               ) B
+         <if test="startNo != null and startNo != '0' and listType != 'EXCEL' ">
+           WHERE RNUM BETWEEN #{startNo} AND #{endNo}
+        </if>
+    </select>
+
+    <!-- 권한변경로그 조회 count-->
+    <select id="getMbrGradeLogListCount" parameterType="dmap" resultType="int">
+         SELECT COUNT(*) AS TOTAL FROM
+        (SELECT a.*, ROWNUM AS RNUM FROM
+            (
+                    SELECT
+                        SYS_GB
+                        , DECODE (SYS_GB, 'WWW', '학습시스템', 'ADM', '관리자시스템', '-') AS SYS_GB_NAME
+                        , TG_USERNO
+                        , TG_USERID
+                        , TG_USERNAME
+                        , TG_GRADE_CODE
+                        , TRANS_USERNO
+                        , TRANS_USERID
+                        , TRANS_USERNAME
+                        , TRANS_IP
+                        , TO_CHAR(TRANS_DT,'YYYY-MM-DD HH24:MI:SS') AS TRANS_DT
+                        , SUMMARY
+                    FROM
+                        TB_SY_GRADE_LOG
+                    WHERE 1=1
+                    <if test="sysGb != null and sysGb != ''">
+                        AND SYS_GB = #{sysGb}
+                    </if>
+                    <if test="sdate != null and sdate != '' and edate != null and edate != '' ">
+                        AND TO_CHAR(TRANS_DT,'YYYYMMDD') BETWEEN REPLACE(#{sdate},'-', '') AND REPLACE(#{edate},'-', '')
+                    </if>
+
+                    <if test="searchWord != null and searchWord != ''">
+                        <if test='searchMode != null and searchMode != "" and searchMode == "TG_USERID" '>
+                            AND TG_USERID LIKE '%'||#{searchWord}||'%'
+                        </if>
+                        <if test='searchMode != null and searchMode != "" and searchMode == "TRANS_USERID" '>
+                            AND TRANS_USERID LIKE '%'||#{searchWord}||'%'
+                        </if>
+                        <if test='searchMode != null and searchMode != "" and searchMode == "TRANS_IP" '>
+                            AND TRANS_IP LIKE '%'||#{searchWord}||'%'
+                        </if>
+                    </if>
+
+                       ORDER BY TRANS_DT DESC
+             ) A WHERE 1=1
+               ) B
+    </select>
+
+    <!-- 접속로그 그룹 리스트 조회 -->
+    <select id="getAccessLogGroupList" parameterType="dmap" resultType="emap">
+        SELECT * FROM ( SELECT T999.*, ROWNUM RNUM FROM (
+            SELECT
+                  ACCES_SEQ
+                , ACCES_IP
+                , TO_CHAR(ACCES_DATE, 'YYYY-MM-DD') AS ACCES_DE
+                , TO_CHAR(ACCES_DATE, 'HH24:MI:SS') AS ACCES_TM
+                , ACCES_USERID
+                , SYS_GB
+                , DECODE(SYS_GB, 'WWW', '학습시스템', 'ADM', '관리시스템', '-') SYS_GB_NAME
+                , ACCES_URL
+                , ACCES_YEAR
+            FROM TB_SY_ACCES_LOG
+            WHERE ACCES_SEQ IN (
+                SELECT
+                    MAX(ACCES_SEQ) AS ACCES_SEQ
+                FROM TB_SY_ACCES_LOG
+                WHERE 1=1
+                <if test="sdate != null and sdate != ''">
+                     AND TO_CHAR(ACCES_DATE,'RRRR-MM-DD') <![CDATA[ >= ]]> #{sdate}
+                </if>
+                <if test="edate != null and edate != ''">
+                     AND TO_CHAR(ACCES_DATE,'RRRR-MM-DD') <![CDATA[ <= ]]> #{edate}
+                </if>
+
+                <if test="sysGb != null and sysGb != ''">
+                     AND SYS_GB = #{sysGb}
+                </if>
+
+                <if test="searchWord != null and searchWord != ''">
+                     <if test='searchMode != null and searchMode != "" and searchMode == "accesUserId" '>
+                        AND ACCES_USERID LIKE '%'||#{searchWord}||'%'
+                     </if>
+                     <if test='searchMode != null and searchMode != "" and searchMode == "accesIp" '>
+                        AND ACCES_IP LIKE '%'||#{searchWord}||'%'
+                     </if>
+                     <if test='searchMode != null and searchMode != "" and searchMode == "accesUrl" '>
+                        AND ACCES_URL LIKE '%'||#{searchWord}||'%'
+                     </if>
+                </if>
+
+                GROUP BY ACCES_USERID
+            )
+            ORDER BY ACCES_SEQ DESC
+            ) T999
+        ) B
+
+        WHERE RNUM BETWEEN #{startNo} AND #{endNo}
+    </select>
+    
+    <select id="getAccessLogGroupListCount" parameterType="dmap" resultType="int">
+        SELECT count(*) FROM ( SELECT T999.*, ROWNUM RNUM FROM (
+            SELECT
+                  ACCES_SEQ
+                , ACCES_IP
+                , TO_CHAR(ACCES_DATE, 'YYYY-MM-DD') AS ACCES_DE
+                , TO_CHAR(ACCES_DATE, 'HH24:MI:SS') AS ACCES_TM
+                , ACCES_USERID
+                , SYS_GB
+                , DECODE(SYS_GB, 'WWW', '학습시스템', 'ADM', '관리시스템', '-') SYS_GB_NAME
+                , ACCES_URL
+                , ACCES_YEAR
+            FROM TB_SY_ACCES_LOG
+            WHERE ACCES_SEQ IN (
+                SELECT
+                    MAX(ACCES_SEQ) AS ACCES_SEQ
+                FROM TB_SY_ACCES_LOG
+                WHERE 1=1
+                <if test="sdate != null and sdate != ''">
+                     AND TO_CHAR(ACCES_DATE,'RRRR-MM-DD') <![CDATA[ >= ]]> #{sdate}
+                </if>
+                <if test="edate != null and edate != ''">
+                     AND TO_CHAR(ACCES_DATE,'RRRR-MM-DD') <![CDATA[ <= ]]> #{edate}
+                </if>
+
+                <if test="sysGb != null and sysGb != ''">
+                     AND SYS_GB = #{sysGb}
+                </if>
+
+                <if test="searchWord != null and searchWord != ''">
+                     <if test='searchMode != null and searchMode != "" and searchMode == "accesUserId" '>
+                        AND ACCES_USERID LIKE '%'||#{searchWord}||'%'
+                     </if>
+                     <if test='searchMode != null and searchMode != "" and searchMode == "accesIp" '>
+                        AND ACCES_IP LIKE '%'||#{searchWord}||'%'
+                     </if>
+                     <if test='searchMode != null and searchMode != "" and searchMode == "accesUrl" '>
+                        AND ACCES_URL LIKE '%'||#{searchWord}||'%'
+                     </if>
+                </if>
+
+                GROUP BY ACCES_USERID
+            )
+            ORDER BY ACCES_SEQ DESC
+            )  T999 
+        ) B
+    </select>
+
+
+    <!-- 접속로그 목록 -->
+    <select id="getAccessLogList" parameterType="dmap" resultType="emap">
+        SELECT * FROM ( SELECT T999.*, ROWNUM RNUM FROM (
+            SELECT
+                  ACCES_SEQ
+                , ACCES_IP
+                , TO_CHAR(ACCES_DATE, 'YYYY-MM-DD') AS ACCES_DE
+                , TO_CHAR(ACCES_DATE, 'HH24:MI:SS') AS ACCES_TM
+                , ACCES_USERID
+                , SYS_GB
+                , DECODE(SYS_GB, 'WWW', '학습시스템', 'ADM', '관리시스템', '-') SYS_GB_NAME
+                , ACCES_URL
+                , ACCES_YEAR
+            FROM TB_SY_ACCES_LOG
+            WHERE 1=1
+            <if test="sdate != null and sdate != ''">
+                 AND TO_CHAR(ACCES_DATE,'RRRR-MM-DD') <![CDATA[ >= ]]> #{sdate}
+            </if>
+            <if test="edate != null and edate != ''">
+                 AND TO_CHAR(ACCES_DATE,'RRRR-MM-DD') <![CDATA[ <= ]]> #{edate}
+            </if>
+
+            <if test="sysGb != null and sysGb != ''">
+                 AND SYS_GB = #{sysGb}
+            </if>
+
+
+            <if test="searchWord != null and searchWord != ''">
+                 <if test='searchMode != null and searchMode != "" and searchMode == "accesUserId" '>
+                    AND ACCES_USERID LIKE '%'||#{searchWord}||'%'
+                 </if>
+                 <if test='searchMode != null and searchMode != "" and searchMode == "accesIp" '>
+                    AND ACCES_IP LIKE '%'||#{searchWord}||'%'
+                 </if>
+                 <if test='searchMode != null and searchMode != "" and searchMode == "accesUrl" '>
+                    AND ACCES_URL LIKE '%'||#{searchWord}||'%'
+                 </if>
+            </if>
+
+            ORDER BY ACCES_SEQ DESC
+            )  T999 
+        ) B
+
+        WHERE RNUM BETWEEN #{startNo} AND #{endNo}
+    </select>
+    
+    <select id="getAccessLogListCount" parameterType="dmap" resultType="int">
+        SELECT count(*) FROM ( SELECT T999.*, ROWNUM RNUM FROM (
+            SELECT
+                  ACCES_SEQ
+                , ACCES_IP
+                , TO_CHAR(ACCES_DATE, 'YYYY-MM-DD') AS ACCES_DE
+                , TO_CHAR(ACCES_DATE, 'HH24:MI:SS') AS ACCES_TM
+                , ACCES_USERID
+                , SYS_GB
+                , DECODE(SYS_GB, 'WWW', '학습시스템', 'ADM', '관리시스템', '-') SYS_GB_NAME
+                , ACCES_URL
+                , ACCES_YEAR
+            FROM TB_SY_ACCES_LOG
+            WHERE 1=1
+            <if test="sdate != null and sdate != ''">
+                 AND TO_CHAR(ACCES_DATE,'RRRR-MM-DD') <![CDATA[ >= ]]> #{sdate}
+            </if>
+            <if test="edate != null and edate != ''">
+                 AND TO_CHAR(ACCES_DATE,'RRRR-MM-DD') <![CDATA[ <= ]]> #{edate}
+            </if>
+
+            <if test="sysGb != null and sysGb != ''">
+                 AND SYS_GB = #{sysGb}
+            </if>
+
+
+            <if test="searchWord != null and searchWord != ''">
+                 <if test='searchMode != null and searchMode != "" and searchMode == "accesUserId" '>
+                    AND ACCES_USERID LIKE '%'||#{searchWord}||'%'
+                 </if>
+                 <if test='searchMode != null and searchMode != "" and searchMode == "accesIp" '>
+                    AND ACCES_IP LIKE '%'||#{searchWord}||'%'
+                 </if>
+                 <if test='searchMode != null and searchMode != "" and searchMode == "accesUrl" '>
+                    AND ACCES_URL LIKE '%'||#{searchWord}||'%'
+                 </if>
+            </if>
+
+            ORDER BY ACCES_SEQ DESC
+            ) T999 
+        ) B
+    </select>
+    
+    <!-- 접속로그 삭제 (팝업) -->
+    <select id="getAccessLogYearList" parameterType="dmap" resultType="emap">
+    	SELECT ACCES_YEAR, COUNT(*) AS CNT
+        FROM TB_SY_ACCES_LOG
+        GROUP BY ACCES_YEAR
+        ORDER BY ACCES_YEAR DESC
+    </select>
+    
+    <!-- 접속로그 삭제 (실행) -->
+    <update id="deleteAccessLogYear" parameterType="dmap">
+    	DELETE FROM TB_SY_ACCES_LOG
+        WHERE ACCES_YEAR = #{accesYear}
+    </update>
+    
+
+	<!-- 
+	공통 > 개인정보조회이력관리  
+	-->
+	<insert id="insertMbrTransLog"  parameterType="dmap">
+		INSERT INTO TB_SY_TRANS_LOG (
+	          TRANS_SEQ
+			, SYS_GB
+			, TRANS_USERNO
+			, TRANS_USERID
+			, TRANS_USERNAME
+			, TRANS_IP
+			, TRANS_GB
+			, TRANS_DT
+			, SUMMARY
+			, PROG_ID
+			, PROG_NM
+    	) VALUES (
+          	  (SELECT NVL(MAX(TRANS_SEQ),0) + 1 FROM TB_SY_TRANS_LOG)
+	        , #{sysGb}
+	        , #{transUserNo}
+	        , #{transUserId}
+	        , #{transUserName}
+	        , #{transIp}
+	        , #{transGb}
+	        , SYSDATE
+	        , #{summary}
+	        , #{progId}
+	        , #{progNm}
+    	)
+	</insert>
+	
+	<!-- 
+	공통 > 회원권한변경로그 insertMbrGradeLog
+	-->
+	<insert id="insertMbrGradeLog"  parameterType="dmap">
+		INSERT INTO TB_SY_GRADE_LOG (
+			  GRADE_SEQ
+			, SYS_GB
+			, TG_USERNO
+			, TG_USERID
+			, TG_USERNAME
+			, TG_GRADE_CODE
+			, TRANS_USERNO
+			, TRANS_USERID
+			, TRANS_USERNAME
+			, TRANS_IP
+			, TRANS_DT
+			, SUMMARY
+		) VALUES  (
+			  (SELECT NVL(MAX(GRADE_SEQ),0) + 1 FROM TB_SY_GRADE_LOG)
+			, #{sysGb}
+			, #{userNo}
+			, #{userId}
+			, #{userName}
+			, #{userGradeCode}
+			, #{transUserNo}
+			, #{transUserId}
+		    , #{transUserName}
+		    , #{transIp} 
+		    , SYSDATE
+		    , #{summary}
+		)
+	</insert>	
+	
+	<!-- 
+	공통 > 로그인이력관리  
+	-->
+	<insert id="insertMbrLoginLog"  parameterType="dmap">
+		INSERT INTO TB_SY_LOGIN_LOG (
+	          LOGIN_SEQ
+			, SYS_GB
+			, TRANS_USERNO
+			, TRANS_USERID
+			, TRANS_USERNAME
+			, TRANS_IP
+			, TRANS_GB
+			, TRANS_DT
+			, SUMMARY
+    	) VALUES (
+          	  (SELECT NVL(MAX(LOGIN_SEQ),0) + 1 FROM TB_SY_LOGIN_LOG)
+	        , #{sysGb}
+	        , #{transUserNo}
+	        , #{transUserId}
+	        , #{transUserName}
+	        , #{transIp}
+	        , #{transGb}
+	        , SYSDATE
+	        , #{summary}
+    	)
+	</insert>
+	
+</mapper>

@@ -1,0 +1,800 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminUserMapper">
+
+
+    <!-- 20161109 수정 : 회원가입 연도 리스트 -->
+    <select id="getUserRgsdeYear" parameterType="dmap" resultType="emap">
+        SELECT
+           DISTINCT TO_CHAR(RGSDE, 'YYYY') PYEAR
+        FROM TB_CT_UNITY_MBER
+        WHERE RGSDE IS NOT NULL
+    </select>
+
+    <!-- 20161109 수정 : 회원정보 리스트 -->
+    <select id="getUserList" parameterType="dmap" resultType="emap">
+        SELECT 	B.*
+                , B.MBERNM AS USERNAME
+                , (SELECT MT_SUB_NAME FROM TB_CD_mt_sub WHERE MT_SUB_CODE = B.MT_TUTOR_INFO) TUTOR_NAME
+                    
+        FROM (
+           SELECT AA.*
+                    , TO_CHAR(AA.RGSDE, 'YYYY-MM-DD HH24:MI:SS') AS WRITE_DATE
+                    , ROW_NUMBER() OVER (ORDER BY NUM DESC) AS RNUM
+                    , COUNT(1) OVER() TOTAL_CNT
+                	, (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB T3 WHERE T3.MT_SUB_CODE = AA.MT_GRADE_CODE) AS MT_GRADE_NAME
+                    , MT_TUTOR_CODE AS MT_TUTOR_INFO
+            FROM (
+                SELECT ROW_NUMBER() OVER (ORDER BY UNITY_MBERNO ASC) AS NUM
+                     , UNITY_ID AS USERID
+                     , UNITY_MBERNO  AS USERNO
+                     , MT_GRADE_CODE
+                     , MBERNM
+                     , RGSDE
+                     , COMNO
+                     , BIZNO
+                     , AUTH_MODE
+                     , MOBLPHON
+                     , EMAIL
+                     , BRTHDY
+                     , MT_TUTOR_CODE
+                  	 , TO_CHAR(LOGIN_DATE, 'YYYY-MM-DD HH24:MI:SS') AS LOGIN_DATE
+                     , (SELECT TO_CHAR(REC_DATE, 'YYYY-MM-DD HH24:MI:SS') AS REC_DATE  FROM TB_SY_MAIL_REC WHERE REC_USERID = UNITY_ID AND SECSN_MAIL_YN = 'Y') AS REC_DATE
+                     , MT_OFFICE_CODE
+          		     , (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = MT_OFFICE_CODE) MT_OFFICE_NAME
+                FROM TB_CT_UNITY_MBER
+                WHERE 1=1
+                AND SECSN_AT != 'Y'
+                <if test="mtGradeCode != null and mtGradeCode != ''">
+                	<if test="mtGradeCode != null and mtGradeCode == 'AA5000'">
+                		AND TUTOR_AT = 'Y'
+                	</if>
+                	<if test="mtGradeCode != null and mtGradeCode != 'AA5000'">
+                		AND MT_GRADE_CODE = #{mtGradeCode}
+                	</if>
+                </if>
+                <if test="searchWord != null and searchWord != ''">
+                    <if test="searchMode != null and searchMode == 'userName'">
+                        AND MBERNM LIKE '%'||#{searchWord}||'%'
+                    </if>
+                    <if test="searchMode != null and searchMode == 'userId'">
+                        AND UNITY_ID LIKE '%'||#{searchWord}||'%'
+                    </if>
+                    <if test="searchMode != null and searchMode == 'mobile'">
+                        AND MOBLPHON LIKE '%'||#{searchWord}||'%'
+                    </if>
+                    <if test="searchMode != null and searchMode == 'email'">
+                        AND EMAIL LIKE '%'||#{searchWord}||'%'
+                    </if>
+                    <if test="searchMode != null and searchMode == 'officeName'">
+                        AND (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = MT_OFFICE_CODE) LIKE '%'||#{searchWord}||'%'
+                    </if>
+                </if>
+                <if test="year != null and year != ''">	AND TO_CHAR(RGSDE, 'YYYY') = #{year} </if>
+                <if test="month != null and month != ''">
+                     <if test="month != null and month != '00'">
+                         AND TO_CHAR(RGSDE, 'MM') = #{month}
+                     </if>
+                </if>
+                <if test="day != null and day != ''">
+                      <if test="day != null and day != '00'">
+                         AND TO_CHAR(RGSDE, 'DD') = #{day}
+                     </if>
+                </if>
+                <if test="sdate != null and sdate != ''">
+                      AND RGSDE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00' ,'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59','YYYY-MM-DD HH24:MI:SS')
+                </if>
+                <if test="loginDateSdate != null and loginDateSdate != ''">
+                      AND LOGIN_DATE BETWEEN TO_TIMESTAMP(#{loginDateSdate}|| '00:00:00' ,'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{loginDateEdate}|| '23:59:59','YYYY-MM-DD HH24:MI:SS')
+                </if>
+                <if test="comno != null and comno != ''"> AND COMNO = #{comno}</if>
+                <if test="bizno != null and bizno != ''"> AND BIZNO = #{bizno}</if>
+             ) AA
+             <if test="secsnMailYnSdate != null and secsnMailYnSdate != ''">
+                WHERE REC_DATE BETWEEN TO_TIMESTAMP(#{secsnMailYnSdate}|| '00:00:00' ,'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{secsnMailYnEdate}|| '23:59:59','YYYY-MM-DD HH24:MI:SS')
+             </if>
+           ) B
+           WHERE 1=1
+           <if test="startNo != null and startNo != '0' and listType != 'EXCEL' ">
+               AND RNUM BETWEEN #{startNo} AND #{endNo}
+           </if>
+    </select>
+    
+     <!-- 20161109 수정 : 회원정보 카운트 -->
+    <select id="getUserListCount" parameterType="dmap" resultType="int">
+            SELECT 	COUNT(*)
+	        FROM (
+	           SELECT AA.*
+	                    , (SELECT MT_SUB_NAME  FROM TB_CD_MT_SUB T3 WHERE T3.MT_SUB_CODE = AA.MT_GRADE_CODE) AS MT_GRADE_NAME
+	                    , TO_CHAR(AA.RGSDE, 'YYYY-MM-DD HH24:MI:SS') AS WRITE_DATE
+	                    , ROW_NUMBER() OVER (ORDER BY NUM DESC) AS RNUM
+	                    , COUNT(1) OVER() TOTAL_CNT
+	            FROM (
+	                SELECT ROW_NUMBER() OVER (ORDER BY RGSDE ASC) AS NUM
+                          	, UNITY_ID AS USERID
+                          	, UNITY_MBERNO  AS USERNO
+                          	, MT_GRADE_CODE
+                          	, MBERNM
+                          	, RGSDE
+                          	, COMNO
+                          	, BIZNO
+                          	, AUTH_MODE
+                          	, MOBLPHON
+                          	, EMAIL
+                         	, MT_TUTOR_CODE
+                          	, LOGIN_DATE
+                          	, (SELECT REC_DATE FROM TB_SY_MAIL_REC WHERE REC_USERID = UNITY_ID AND SECSN_MAIL_YN = 'Y') AS REC_DATE
+                          	, MT_OFFICE_CODE
+              		   		, (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = MT_OFFICE_CODE) MT_OFFICE_NAME
+	                FROM TB_CT_UNITY_MBER
+	                WHERE 1=1
+	                AND SECSN_AT != 'Y'
+	                <if test="mtGradeCode != null and mtGradeCode != ''">
+                    	<if test="mtGradeCode != null and mtGradeCode == 'AA5000'">
+	                		AND TUTOR_AT = 'Y'
+	                	</if>
+	                	<if test="mtGradeCode != null and mtGradeCode != 'AA5000'">
+	                		AND MT_GRADE_CODE = #{mtGradeCode}
+	                	</if>
+	                </if>
+	                <if test="searchWord != null and searchWord != ''">
+	                    <if test="searchMode != null and searchMode == 'userName'">
+	                        AND MBERNM LIKE '%'||#{searchWord}||'%'
+	                    </if>
+	                    <if test="searchMode != null and searchMode == 'userId'">
+	                        AND UNITY_ID LIKE '%'||#{searchWord}||'%'
+	                    </if>
+	                    <if test="searchMode != null and searchMode == 'comName'">
+	                        AND (SELECT COMNAME FROM TB_CT_COMPANY WHERE COMNO = A.COMNO) LIKE '%'||#{searchWord}||'%'
+	                    </if>
+	                    <if test="searchMode != null and searchMode == 'mobile'">
+                        	AND MOBLPHON LIKE '%'||#{searchWord}||'%'
+	                    </if>
+	                    <if test="searchMode != null and searchMode == 'email'">
+	                        AND EMAIL LIKE '%'||#{searchWord}||'%'
+	                    </if>
+	                    <if test="searchMode != null and searchMode == 'officeName'">
+	                        AND (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = MT_OFFICE_CODE) LIKE '%'||#{searchWord}||'%'
+	                    </if>
+	                </if>
+	                <if test="year != null and year != ''">	AND TO_CHAR(RGSDE, 'YYYY') = #{year} </if>
+	                <if test="month != null and month != ''">
+	                     <if test="month != null and month != '00'">
+	                         AND TO_CHAR(RGSDE, 'MM') = #{month}
+	                     </if>
+	                </if>
+	                <if test="day != null and day != ''">
+	                      <if test="day != null and day != '00'">
+	                         AND TO_CHAR(RGSDE, 'DD') = #{day}
+	                     </if>
+	                </if>
+	                <if test="sdate != null and sdate != ''">
+	                      AND RGSDE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00' ,'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59','YYYY-MM-DD HH24:MI:SS')
+	                </if>
+	                <if test="loginDateSdate != null and loginDateSdate != ''">
+	                      AND LOGIN_DATE BETWEEN TO_TIMESTAMP(#{loginDateSdate}|| '00:00:00' ,'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{loginDateEdate}|| '23:59:59','YYYY-MM-DD HH24:MI:SS')
+	                </if>
+	                <if test="comno != null and comno != ''"> AND COMNO = #{comno}</if>
+	                <if test="bizno != null and bizno != ''"> AND BIZNO = #{bizno}</if>
+	                ORDER BY RGSDE ASC
+	             ) AA
+	             <if test="secsnMailYnSdate != null and secsnMailYnSdate != ''">
+	                WHERE REC_DATE BETWEEN TO_TIMESTAMP(#{secsnMailYnSdate}|| '00:00:00' ,'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{secsnMailYnEdate}|| '23:59:59','YYYY-MM-DD HH24:MI:SS')
+	             </if>
+	             ORDER BY NUM DESC
+	           ) B
+    </select>
+	
+	<select id="getTotalUserCount" parameterType="dmap" resultType="int">
+		SELECT 	COUNT(*)
+	        FROM TB_CT_UNITY_MBER 
+        WHERE SECSN_AT='N'
+	</select>
+	
+    <!-- 20161109 수정 : 회원 상세정보 -->
+    <select id="getUserInfo" parameterType="dmap" resultType="emap">
+        SELECT AA.*
+            , (SELECT COMNAME FROM TB_CT_COMPANY C WHERE C.COMNO = AA.COMNO) AS COMNAME
+            , (CASE WHEN MT_TUTOR_CODE IS NOT NULL THEN MT_TUTOR_CODE ELSE '' END) TUTOR_CODE
+         FROM (
+            SELECT UNITY_MBERNO AS USERNO
+                , MBERNM AS USERNAME
+                , UNITY_ID AS USERID
+                , EMAIL AS EMAIL
+                , MOBLPHON AS MOBILE
+                , TO_CHAR(RGSDE, 'YYYY-MM-DD') WRITE_DATE
+                , BIZNO
+                , MBERNM
+                , BRTHDY
+                , TELNO
+                , LNM_ZIP
+                , LNM_ADRES1
+                , LNM_ADRES2
+                , EMAIL_RECPTN_AT
+                , SMS_RECPTN_AT
+                , DEPT_NAME
+                , MT_GRADE_CODE
+                , MT_JOB_KND_CODE
+                , POSITION_NAME
+                , AUTH_MODE
+                , COMNO
+                , SEX
+                , MT_TUTOR_CODE
+                , TUTOR_AT
+                , MT_OFFICE_CODE
+                , (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = MT_OFFICE_CODE) MT_OFFICE_NAME
+                , NVL(SECSN_AT, 'N') AS SECSN_AT   
+                , NVL(COUNSELOR_AT, 'N') AS COUNSELOR_AT
+                , TO_CHAR(KCB_AUTH_DATE, 'YYYY-MM-DD HH24:MI:SS') AS KCB_AUTH_DATE       
+            FROM TB_CT_UNITY_MBER
+            WHERE UNITY_MBERNO = #{userNo}
+         ) AA
+          LEFT OUTER JOIN TB_CT_COMPANY B ON AA.COMNO = B.COMNO
+          WHERE 1=1
+    </select>
+
+    <!-- 20161109 수정 : 회원정보 수정 -->
+    <update id="updateUserInfo" parameterType="dmap">
+        UPDATE TB_CT_UNITY_MBER SET
+            UPDDE = SYSDATE
+            , MBERNM = #{mbernm}
+            , EMAIL = #{email}
+            , MOBLPHON = #{mobile}
+            , MT_GRADE_CODE = #{mtGradeCode}
+            , POSITION_NAME = #{positionName}
+            , EMAIL_RECPTN_AT = #{emailRecptnAt}
+            , SMS_RECPTN_AT = #{smsRecptnAt}
+            , BRTHDY = #{brthdy}
+            , SEX = #{sex}
+            , MT_OFFICE_CODE = #{mtOfficeCode}
+            <if test='tutorAt != null and tutorAt == "Y"'>
+                , TUTOR_AT = #{tutorAt}
+                , MT_TUTOR_CODE = #{mtTutorCode}
+            </if>
+            <if test='tutorAt != null and tutorAt == "N"'>
+                , TUTOR_AT = #{tutorAt}
+                , MT_TUTOR_CODE = NULL
+            </if>
+            <if test='counselAt != null and counselAt == "Y"'>
+                , COUNSELOR_AT = #{counselAt}
+                , COUNSEL_DT = SYSDATE
+            </if>
+            <if test='counselAt != null and counselAt == "N"'>
+                , COUNSELOR_AT = #{counselAt}
+            </if>
+            , COMNO = #{comNo}
+        WHERE UNITY_MBERNO = #{userNo}
+    </update>
+
+    <!-- 20161109 수정 : 회원정보 비밀번호 초기화 -->
+    <update id="updatePwdClearInfo" parameterType="dmap">
+        UPDATE TB_CT_UNITY_MBER SET
+            UNITY_PASSWORD = #{newUnityPassword}
+            , LOGIN_FAIL_CNT = 0
+            , REG_AT = 'Y'
+        WHERE UNITY_MBERNO = #{userNo}
+    </update>
+
+    <!-- 20161109 수정 : 탈퇴 회원정보 리스트 -->
+    <select id="getUserCancelList"  parameterType="dmap" resultType="emap">
+       SELECT B.*
+            , B.MBERNM AS USERNAME
+            , (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = B.MT_TUTOR_CODE ) TUTOR_NAME
+        FROM (
+            SELECT ROW_NUMBER() OVER (ORDER BY NUM DESC) AS RNUM
+            		, AA.*
+                    , (SELECT MT_SUB_NAME  FROM TB_CD_MT_SUB T3 WHERE T3.MT_SUB_CODE = AA.MT_GRADE_CODE) AS MT_GRADE_NAME
+                    , TO_CHAR(AA.RGSDE, 'YYYY-MM-DD HH24:MI:SS') AS WRITE_DATE
+            FROM (
+                SELECT ROW_NUMBER() OVER (ORDER BY NVL(SECSN_DATE, TO_DATE('2010-01-01','YYYY-MM-DD')), RGSDE) AS NUM
+                        , UNITY_ID AS USERID
+                        , UNITY_MBERNO  AS USERNO
+                        , MT_GRADE_CODE
+                        , MBERNM
+                        , RGSDE
+                        , COMNO
+                        , BIZNO
+                        , AUTH_MODE
+                        , MOBLPHON
+                        , EMAIL
+                        , MT_TUTOR_CODE
+                        , MT_SECSN_CODE
+                        , SECSN_DATE
+                    	, COUNT(1) OVER() TOTAL_CNT
+                FROM TB_CT_UNITY_MBER
+                WHERE 1=1
+                AND SECSN_AT = 'Y'
+                <if test="mtGradeCode != null and mtGradeCode != ''">
+                    AND MT_GRADE_CODE = #{mtGradeCode}
+                </if>
+                <if test="searchWord != null and searchWord != ''">
+                    <if test="searchMode != null and searchMode == 'userName'">
+                        AND MBERNM LIKE '%'||#{searchWord}||'%'
+                    </if>
+                    <if test="searchMode != null and searchMode == 'userId'">
+                        AND UNITY_ID LIKE '%'||#{searchWord}||'%'
+                    </if>
+                    <if test="searchMode != null and searchMode == 'comName'">
+                        AND (SELECT COMNAME FROM TB_CT_COMPANY WHERE COMNO = A.COMNO) LIKE '%'||#{searchWord}||'%'
+                    </if>
+                    <if test="searchMode != null and searchMode == 'mobile'">
+                        AND MOBLPHON LIKE '%'||#{searchWord}||'%'
+                    </if>
+                    <if test="searchMode != null and searchMode == 'bizno'">
+                        AND BIZNO LIKE '%'||#{searchWord}||'%'
+                    </if>
+                </if>
+                <if test="year != null and year != ''">	AND TO_CHAR(RGSDE, 'YYYY') = #{year} </if>
+                <if test="month != null and month != ''">
+                     <if test="month != null and month != '00'">
+                         AND TO_CHAR(RGSDE, 'MM') = #{month}
+                     </if>
+                </if>
+                <if test="day != null and day != ''">
+                      <if test="day != null and day != '00'">
+                         AND TO_CHAR(RGSDE, 'DD') = #{day}
+                     </if>
+                </if>
+                <if test="sdate != null and sdate != ''">
+                      AND RGSDE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00' ,'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59','YYYY-MM-DD HH24:MI:SS')
+                </if>
+                <if test="mtGradeCode != null and mtGradeCode != ''"> AND MT_GRADE_CODE = #{mtGradeCode}  </if>
+                <if test="comno != null and comno != ''"> AND COMNO = #{comno}</if>
+                <if test="bizno != null and bizno != ''"> AND BIZNO = #{bizno}</if>
+
+             ) AA
+       ) B
+       WHERE 1=1
+       <if test="startNo != null and startNo != '0' and listType != 'EXCEL' ">
+           AND RNUM BETWEEN #{startNo} AND #{endNo}
+       </if>
+    </select>
+
+    <!-- 20161109 수정 : 탈퇴 회원정보 리스트 -->
+    <select id="getUserCancelListCount"  parameterType="dmap" resultType="int">
+
+        SELECT COUNT(*)
+        FROM TB_CT_UNITY_MBER
+        WHERE  SECSN_AT = 'Y'
+           <if test="mtGradeCode != null and mtGradeCode != ''">
+               AND MT_GRADE_CODE = #{mtGradeCode}
+           </if>
+           <if test="searchWord != null and searchWord != ''">
+            <if test="searchMode != null and searchMode == 'userName'">
+                   AND MBERNM LIKE '%'||#{searchWord}||'%'
+               </if>
+               <if test="searchMode != null and searchMode == 'userId'">
+                   AND UNITY_ID LIKE '%'||#{searchWord}||'%'
+               </if>
+               <if test="searchMode != null and searchMode == 'comName'">
+                   AND (SELECT COMNAME FROM TB_CT_COMPANY WHERE COMNO = A.COMNO) LIKE '%'||#{searchWord}||'%'
+               </if>
+               <if test="searchMode != null and searchMode == 'mobile'">
+                   AND MOBLPHON LIKE '%'||#{searchWord}||'%'
+               </if>
+               <if test="searchMode != null and searchMode == 'bizno'">
+                   AND BIZNO LIKE '%'||#{searchWord}||'%'
+               </if>
+        </if>
+    </select>
+
+    <!-- 20161109 수정 : 기업정보 리스트 -->
+    <select id="getCompanyList"  parameterType="dmap" resultType="emap">
+     SELECT b.*
+     FROM (
+        SELECT a.*
+            , ROW_NUMBER() OVER (ORDER BY NUM DESC) AS RNUM
+            , COUNT(1) OVER() TOTAL_CNT
+        FROM (
+            SELECT ROW_NUMBER() OVER (ORDER BY REGDATE ASC) AS NUM
+                , COMNO
+                , COMNAME
+                , COM_REG_GB
+                , COM_REG_DATE
+                , BIZNO
+                , CEO
+                , ZIP
+                , ADDR01
+                , ADDR02
+                , TEL
+                , FAX
+                , USE_AT
+                , STATUS_GB
+                , UPTEA_NM
+                , UPJONG_NM
+                , MT_ORG_CODE
+                , REGID
+                , REGNM
+                , EMAIL
+                , EMP_TEL
+                , EMP_EMAIL
+                , TO_CHAR(REGDATE, 'YYYY-MM-DD') AS REGDATE
+            FROM TB_CT_COMPANY
+            WHERE USE_AT = 'Y'
+            <if test="searchWord != null and searchWord != ''">
+                <if test="searchMode != null and searchMode == 'empNm'">
+                   AND (SELECT MBERNM FROM TB_CT_UNITY_MBER WHERE B.MBERNM LIKE '%'||#{empNm}||'%')
+                </if>
+                <if  test="searchMode != null and searchMode == 'ceo'">
+                   AND CEO LIKE '%'||#{searchWord}||'%'
+                </if>
+                <if  test="searchMode != null and searchMode == 'comName'">
+                   AND COMNAME LIKE '%'||#{searchWord}||'%'
+                </if>
+             </if>
+             <if test="comRegGb != null and comRegGb != ''">
+                 AND COM_REG_GB = #{comRegGb}
+             </if>
+           ) a
+        ) b
+        WHERE 1=1
+        <if test="startNo != null and startNo != '0' and listType != 'EXCEL' ">
+           AND RNUM BETWEEN #{startNo} AND #{endNo}
+       </if>
+    </select>
+
+    <!-- 20161109 수정 : 기업정보가져오기 -->
+    <select id="getCompanyInfo"  resultType="emap" parameterType="dmap">
+        SELECT
+            COMNO
+            , COMNAME
+            , COM_REG_GB
+            , COM_REG_DATE
+            , BIZNO
+            , CEO
+            , ZIP
+            , ADDR01
+            , ADDR02
+            , TEL
+            , FAX
+            , USE_AT
+            , STATUS_GB
+            , UPTEA_NM
+            , UPJONG_NM
+            , TO_CHAR(REGDATE, 'YYYY-MM-DD') AS REGDATE
+            , MT_ORG_CODE
+            , REGID
+            , REGNM
+            , EMAIL
+            , EMP_TEL
+            , EMP_EMAIL
+            , EMP_NM
+            , EMP_ID
+        FROM TB_CT_COMPANY
+        WHERE 1=1
+        AND COMNO = #{comno}
+    </select>
+
+    <!-- 20161109 수정 : 기업승인 -사용 안하는것 같음 -->
+    <update id="updateApprovalInfo" parameterType ="dmap">
+        UPDATE TB_CT_COMPANY SET
+            STATUS_GB = #{statusGb}
+        WHERE COMNO = #{comno}
+    </update>
+
+    <!-- 20161109 수정 : 기업등록 -->
+    <insert id="insertCompanyInfo"  parameterType="dmap">
+        INSERT INTO TB_CT_COMPANY (
+            COMNO
+            , COMNAME
+            , COM_REG_GB
+            , BIZNO
+            , ZIP
+            , ADDR01
+            , ADDR02
+            , TEL
+            , FAX
+            , USE_AT
+            , STATUS_GB
+            , UPTEA_NM
+            , UPJONG_NM
+            , EMP_TEL
+            , EMP_EMAIL
+            , EMP_ID
+            , EMP_NM
+            , REGID
+            , REGNM
+            , REGDATE
+        ) VALUES (
+              (SELECT NVL(MAX(COMNO), 0 ) + 1 as comno FROM TB_CT_COMPANY)
+            , #{comname}
+            , #{comRegGb}
+            , #{bizNo}
+            , #{zip}
+            , #{addr01}
+            , #{addr02}
+            , #{tel}
+            , #{fax}
+            , 'Y'
+            , #{statusGb}
+            , #{upteaNm}
+            , #{upjongNm}
+            , #{empTel}
+            , #{empEmail}
+            , #{empId}
+            , #{empNm}
+            , #{userid}
+            , #{usernm}
+            , SYSDATE
+        )
+    </insert>
+
+    <!-- 20161109 수정 : 기업 엑셀등록 -->
+    <insert id="insertCompanyExcel"  parameterType="dmap">
+        INSERT INTO TB_CT_COMPANY (
+            COMNO
+            , COMNAME
+            , COM_REG_GB
+            , BIZNO
+            , ZIP
+            , ADDR01
+            , ADDR02
+            , TEL
+            , FAX
+            , USE_AT
+            , STATUS_GB
+            , UPTEA_NM
+            , UPJONG_NM
+            , EMP_TEL
+            , EMP_EMAIL
+            , EMP_ID
+            , EMP_NM
+            , REGID
+            , REGNM
+            , REGDATE
+        ) VALUES (
+              (SELECT NVL(MAX(COMNO), 0 ) + 1 as comno FROM TB_CT_COMPANY)
+            , #{comname}
+            , #{comRegGb}
+            , #{bizno}
+            , #{zip}
+            , #{addr01}
+            , #{addr02}
+            , #{tel}
+            , #{fax}
+            , 'Y'
+            , #{statusGb}
+            , #{upteaNm}
+            , #{upjongNm}
+            , #{empTel}
+            , #{empEmail}
+            , #{empId}
+            , #{empNm}
+            , #{userid}
+            , #{usernm}
+            , SYSDATE
+        )
+    </insert>
+
+    <!-- 20161109 수정 : 기업정보수정 -->
+    <update id="updateCompanyInfo" parameterType="dmap">
+        UPDATE TB_CT_COMPANY SET
+            COMNAME = #{comname}
+            , COM_REG_GB = #{comRegGb}
+            , COM_REG_DATE = #{comRegDate}
+            , BIZNO = #{bizno}
+            , CEO = #{ceo}
+            , ZIP = #{zip}
+            , ADDR01 = #{addr01}
+            , ADDR02 = #{addr02}
+            , TEL = #{tel}
+            , FAX = #{fax}
+            , USE_AT = #{useAt}
+            , STATUS_GB = #{statusGb}
+            , UPTEA_NM = #{upteaNm}
+            , UPJONG_NM = #{upjongNm}
+            , UPDID = #{userid}
+            , UPDNM = #{usernm}
+            , UPDDATE = SYSDATE
+            , EMP_ID = #{empId}
+            , EMP_NM = #{empNm}
+            , EMP_TEL = #{empTel}
+            , EMP_EMAIL = #{empEmail}
+        WHERE COMNO = #{comno}
+    </update>
+
+
+    <!-- 20161109 수정 : 기업삭제 -->
+    <delete id="deleteCompanyInfo" parameterType="dmap">
+       UPDATE TB_CT_COMPANY SET USE_AT = 'N' WHERE COMNO = #{comno}
+    </delete>
+
+    <!-- 20161109 수정 : -사용 안하는것 같음 -->
+    <delete id="deleteCompanyUserInfo" parameterType="dmap">
+        DELETE FROM TB_CT_UNITY_MBER WHERE COMNO = #{comno}
+    </delete>
+
+    <!-- 20161109 수정 : 사용자 > 기업담당자 코드 수정 - 사용 안하는것 같음 -->
+    <update id="updateMtGradeCodeInfo" parameterType="dmap">
+        UPDATE TB_CT_UNITY_MBER SET MT_GRADE_CODE = #{mtUserCode} WHERE COMNO = #{comno} AND MT_GRADE_CODE = #{mtGradeCode}
+    </update>
+
+    <!-- 20161109 수정 :  - 사용 안하는것 같음 -->
+    <update id="updateMtGradeCodeInfoAfter" parameterType="dmap">
+        UPDATE TB_CT_UNITY_MBER SET MT_GRADE_CODE = #{mtGradeCode} WHERE COMNO = #{comno} AND UNITY_MBERNO = #{userNo}
+    </update>
+
+    <!-- 지점 리스트 -->
+    <select id="getCompanyCodeList" resultType="emap" parameterType="dmap">
+        SELECT RNUM
+            , MT_SUB_NAME AS COMNAME
+            , MT_SUB_CODE AS COMNO
+        FROM
+         (
+            SELECT ROW_NUMBER() OVER (ORDER BY ORDR ASC) AS RNUM
+            	, MT_SUB_CODE
+            	, MT_SUB_NAME 
+            FROM TB_CD_MT_SUB
+			WHERE MT_CODE = #{mtCode}
+			AND USEYN = 'Y'
+            <if test="searchWord != null and searchWord != '' ">
+                AND MT_SUB_NAME LIKE '%'||#{searchWord}||'%'
+            </if>
+            <if test="mtOfficeName != null and mtOfficeName != '' ">
+                AND MT_SUB_NAME LIKE '%'||#{mtOfficeName}||'%'
+            </if>
+         )A
+        WHERE RNUM BETWEEN #{startNo} and #{endNo}
+    </select>
+
+    <!-- 20161109 수정 : 관할기관 찾기 리스트 수 -->
+    <select id="getCompanyCodeCount" resultType="int" parameterType="dmap">
+        SELECT COUNT(*) AS TOTALCNT
+        FROM TB_CD_MT_SUB
+		WHERE MT_CODE = #{mtCode}
+		AND USEYN = 'Y'
+        <if test="searchWord != null and searchWord != '' ">
+            AND MT_SUB_NAME LIKE '%'||#{searchWord}||'%'
+        </if>
+        <if test="mtOfficeName != null and mtOfficeName != '' ">
+            AND MT_SUB_NAME LIKE '%'||#{mtOfficeName}||'%'
+        </if>
+    </select>
+
+	<!-- 회원탈퇴 -->
+    <update id="withdrawUser" parameterType="dmap">
+    	UPDATE TB_CT_UNITY_MBER
+    	SET SECSN_AT = 'Y',
+    		TELNO = '',
+    		EMAIL = '',
+    		MOBLPHON = '',
+    		MT_SECSN_CODE = #{mtSecsnCode},
+    		SECSN_DATE = SYSDATE
+    	WHERE UNITY_ID = #{userId}
+    </update>
+    
+    <!-- 비회원정보 리스트 -->
+    <select id="getNmberList" parameterType="dmap" resultType="emap">
+        SELECT 	B.*                    
+        FROM (
+           SELECT AA.*
+                    , ROW_NUMBER() OVER (ORDER BY NUM DESC) AS RNUM
+                    , COUNT(1) OVER() TOTAL_CNT
+            FROM (
+                SELECT ROW_NUMBER() OVER (ORDER BY UNITY_MBERNO ASC) AS NUM
+                     , UNITY_MBERNO  AS USERNO
+                     , MT_GRADE_CODE
+                     , MBERNM
+                     , TO_CHAR(REGDATE, 'YYYY-MM-DD HH24:MI:SS') AS REGDATE
+                     , SEX
+					 , DECODE(SEX, 'F', '여자', 'M', '남자', '') AS SEX_NM
+					 , SECSN_AT
+                     , REGNO
+                     , MOBLPHON
+                     , BRTHDY
+                     , MT_OFFICE_CODE
+          		     , (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = MT_OFFICE_CODE) MT_OFFICE_NAME
+          		     , (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB T3 WHERE T3.MT_SUB_CODE = MT_GRADE_CODE) AS MT_GRADE_NAME
+                FROM TB_CT_NONMBER
+                WHERE 1=1
+                AND NVL(SECSN_AT,'N') = 'N'
+                <if test="mtGradeCode != null and mtGradeCode != ''">
+                    AND MT_GRADE_CODE = #{mtGradeCode}
+                </if>
+                <if test="searchWord != null and searchWord != ''">
+                    <if test="searchMode != null and searchMode == 'userName'">
+                        AND MBERNM LIKE '%'||#{searchWord}||'%'
+                    </if>
+                    <if test="searchMode != null and searchMode == 'mobile'">
+                        AND MOBLPHON LIKE '%'||#{searchWord}||'%'
+                    </if>
+                </if>
+                <if test="sdate != null and sdate != ''">
+                      AND REGDATE BETWEEN TO_TIMESTAMP(#{sdate}|| '00:00:00' ,'YYYY-MM-DD HH24:MI:SS') AND TO_TIMESTAMP(#{edate}|| '23:59:59','YYYY-MM-DD HH24:MI:SS')
+                </if>
+             ) AA
+           ) B
+           WHERE 1=1
+           <if test="startNo != null and startNo != '0' and listType != 'EXCEL' ">
+               AND RNUM BETWEEN #{startNo} AND #{endNo}
+           </if>
+    </select>
+    
+    <!-- 비회원 상세정보 -->
+    <select id="getNmberInfo" parameterType="dmap" resultType="emap">
+         SELECT UNITY_MBERNO
+			, BRTHDY
+			, MBERNM
+			, MOBLPHON
+			, SEX
+			, DECODE(SEX, 'F', '여자', 'M', '남자', '') AS SEX_NM
+			, SECSN_AT
+			, REGDATE
+			, REGNO
+			, MT_GRADE_CODE
+            , MT_OFFICE_CODE
+            , (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = MT_OFFICE_CODE) MT_OFFICE_NAME
+         FROM TB_CT_NONMBER
+         WHERE UNITY_MBERNO = #{userNo}
+    </select>
+    
+    <!-- 비회원 상세정보 -->
+     <select id="getNmberInfoByPData" parameterType="dmap" resultType="emap">
+         SELECT 
+              UNITY_MBERNO
+			, BRTHDY
+			, MBERNM
+			, MOBLPHON
+			, SEX
+			, DECODE(SEX, 'F', '여자', 'M', '남자', '') AS SEX_NM
+			, SECSN_AT
+			, REGDATE
+			, REGNO
+			, MT_GRADE_CODE
+            , MT_OFFICE_CODE
+            , (SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = MT_OFFICE_CODE) MT_OFFICE_NAME
+         FROM TB_CT_NONMBER
+         WHERE MOBLPHON = #{moblphon}
+         AND   BRTHDY = #{brthdy}
+         AND   MBERNM = #{mbernm}
+    </select>
+    
+    
+    
+    <!-- 비회원정보 수정 -->
+    <update id="updateNmberInfo" parameterType="dmap">
+    	UPDATE TB_CT_NONMBER SET
+            UPDDE = SYSDATE
+            , MBERNM = #{mbernm}
+            , MOBLPHON = #{moblphon}
+            , MT_GRADE_CODE = #{mtGradeCode}
+            , SEX = #{sex}
+            , BRTHDY = #{brthdy}
+            , MT_OFFICE_CODE = #{mtOfficeCode}
+        WHERE UNITY_MBERNO = #{userNo}
+    </update>
+    
+    <!-- 비회원정보 등록 -->
+    <insert id="insertNmberInfo" parameterType="dmap" >
+         INSERT INTO TB_CT_NONMBER( 
+         	UNITY_MBERNO
+			, BRTHDY
+			, MBERNM
+			, MOBLPHON
+			, SEX
+			, REGDATE
+			, REGNO
+			, MT_GRADE_CODE
+			, MT_OFFICE_CODE
+		)
+        VALUES (
+           (SEQ_TB_USERS.NEXTVAL)
+			, #{brthdy}
+			, #{mbernm}
+			, #{moblphon}
+			, #{sex}
+			, SYSDATE
+			, #{SES_USERNO}
+			, #{mtGradeCode}     
+			<choose>
+				<when test="mtOfficeName != null and mtOfficeName != ''">
+					, (SELECT MT_SUB_CODE FROM TB_CD_MT_SUB WHERE TRIM(MT_SUB_NAME) = #{mtOfficeName} AND MT_CODE = 'OF')
+				</when>
+				<otherwise>
+					, #{mtOfficeCode}
+				</otherwise>
+			</choose>
+		)
+    </insert>
+</mapper>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminMailmanMapper">
+	
+	<resultMap id="syMailManLogClobMap" type="emap">
+		<result property="MAIL_SEQ" column="MAIL_SEQ"/>
+		<result property="REC_SEQ" column="REC_SEQ"/>
+		<result property="REC_USERNAME" column="REC_USERNAME"/>
+		<result property="REC_USERID" column="REC_USERID"/>
+		<result property="REC_EMAIL" column="REC_EMAIL"/>
+		<result property="TPL_UID" column="TPL_UID"/>
+		<result property="WRITER_USERID" column="WRITER_USERID"/>
+		<result property="WRITER_USERNAME" column="WRITER_USERNAME"/>
+		<result property="SEND_DATE" column="SEND_DATE"/>
+		<result property="SUCCCYN" column="SUCCCYN"/>
+		<result property="SUMMARY" column="SUMMARY" jdbcType="CLOB" javaType="java.lang.String"/>
+		<result property="TITLE" column="TITLE"/>
+		<result property="SENDER_EMAIL" column="SENDER_EMAIL"/>
+    </resultMap>
+    
+	<resultMap id="syMailManTplClobMap" type="emap">
+		<result property="TPLNO" column="TPLNO"/>
+		<result property="TPLNAME" column="TPLNAME"/>
+		<result property="CONTENT" column="CONTENT" jdbcType="CLOB" javaType="java.lang.String"/>
+		<result property="USEYN" column="USEYN"/>
+		<result property="TITLE" column="TITLE"/>
+		<result property="TPL_UID" column="TPL_UID"/>
+    </resultMap>
+    
+ 	<!-- 메일 템플릿관리 목록 리스트 -->
+    <select id="getSyMailTplList" resultType="emap" parameterType="dmap">
+    	SELECT 
+    		TPLNO
+            , TPLNAME
+            , CONTENT
+            , USEYN
+            , TPL_UID
+            , ROW_NUMBER() OVER(ORDER BY TPLNO ASC) AS NUM
+        FROM TB_SY_MAIL_TPL
+        ORDER BY TPLNO DESC
+    </select>
+    
+    <!-- 메일 템플릿관리 목록 MAX TPLNO 추출 -->
+	<select id="getSyMailTplTplnoMaxInfo" resultType="int" parameterType="dmap">
+		SELECT NVL(MAX(TPLNO),0)+1 AS MAXTPLNO
+		FROM TB_SY_MAIL_TPL
+	</select>
+    
+    <!-- 메일 템플릿관리 (등록/수정 폼) -->
+    <select id="getSyMailTplInfo" resultMap="syMailManTplClobMap" parameterType="dmap">
+        SELECT TPLNO, TPLNAME, CONTENT, USEYN, TITLE, TPL_UID
+        FROM TB_SY_MAIL_TPL
+        WHERE TPLNO= #{tplno}
+        AND ROWNUM = 1
+	</select>
+	
+	<!-- 메일 템플릿관리 (등록 실행) -->
+    <insert id="insertSyMailTplInfo" parameterType="dmap">
+       	INSERT INTO TB_SY_MAIL_TPL
+		( 
+			TPLNO
+            , TPLNAME
+            , TITLE
+            , CONTENT
+            , FILE_PATH
+            , USEYN
+            , TPL_UID 
+		)
+        VALUES 
+        (
+            #{tplno}
+            , #{tplname}
+            , #{title}
+            , #{content}
+            , #{FILE_path}
+            , #{useyn}
+            , #{tplUid} 
+		)
+	</insert>
+	
+	<!-- 메일 템플릿관리 (수정 실행) -->
+    <update id="updateSyMailTplInfo" parameterType="dmap">
+       	UPDATE TB_SY_MAIL_TPL
+            SET  TPLNAME = #{tplname}
+            , TITLE = #{title}
+            , CONTENT = #{content}
+            , USEYN = #{useyn}
+            , TPL_UID=#{tplUid}
+        WHERE TPLNO = #{tplno}
+	</update>
+	
+	<!-- 메일 템플릿관리 삭제 -->
+	<delete id="mailDeleteExec" parameterType="dmap">
+		DELETE FROM TB_SY_MAIL_TPL
+		WHERE TPLNO = #{tplno}
+	</delete>
+	
+	<!-- 메일 발송목록관리 리스트 -->
+    <select id="getSyMailLogList" resultType="emap" parameterType="dmap">
+    	SELECT 
+    		A.*
+    		, ROW_NUMBER() OVER(ORDER BY RNUM ASC) AS NUM 
+    	 FROM
+       	(
+           SELECT
+               ROW_NUMBER() OVER(ORDER BY L.SEND_DATE DESC) AS  RNUM
+               , COUNT(*) OVER() AS TOTALCOUNT
+                , R.MAIL_SEQ
+                , R.REC_SEQ
+                , R.REC_USERNAME
+                , R.REC_USERID
+                , R.REC_EMAIL
+                , L.TPL_UID
+                , L.WRITER_USERID
+                , L.WRITER_USERNAME
+                , TO_CHAR(L.SEND_DATE,'YYYY-MM-DD HH24:MI:SS') AS SEND_DATE
+                , R.SUCCCYN
+                FROM TB_SY_MAIL_REC R , TB_SY_MAIL_LOG L
+                WHERE R.MAIL_SEQ = L.MAIL_SEQ
+                <if test="sdate != null and sdate != ''"> 
+                    <if test="edate != null and edate != ''"> 
+                        AND TO_CHAR(L.SEND_DATE,'YYYYMMDD') BETWEEN REPLACE(#{sdate},'-', '') AND REPLACE(#{edate},'-', '')
+                    </if>
+                </if>
+                <if test="searchWord != null and searchWord != ''"> 
+                    <if test="searchMode == 'WRITER_USERID'"> AND L.WRITER_USERID LIKE '%'||#{searchWord}||'%' </if>
+                    <if test="searchMode == 'REC_USERID'"> AND R.REC_USERID LIKE '%'||#{searchWord}||'%' </if>
+                    <if test="searchMode == 'WRITER_USERNAME'"> AND L.WRITER_USERNAME LIKE '%'||#{searchWord}||'%' </if>
+                    <if test="searchMode == 'REC_USERNAME'"> AND R.REC_USERNAME LIKE '%'||#{searchWord}||'%' </if>
+                    <if test="searchMode == 'REC_EMAIL'"> AND R.REC_EMAIL LIKE '%'||#{searchWord}||'%' </if>
+                </if>
+                  ORDER BY L.SEND_DATE   DESC
+            ) A  
+		<if test="startNo != null and startNo != '0'"> 
+           WHERE RNUM BETWEEN #{startNo} AND #{endNo}
+		</if>
+    </select>
+    
+    <!-- 메일 발송목록관리 상세 -->
+    <select id="getSyMailLogInfo" resultMap="syMailManLogClobMap" parameterType="dmap">
+		SELECT
+		   R.MAIL_SEQ
+		   , R.REC_SEQ
+		   , R.REC_USERNAME
+		   , R.REC_USERID
+		   , R.REC_EMAIL
+		   , L.TPL_UID
+		   , L.WRITER_USERID
+		   , L.WRITER_USERNAME
+		   , TO_CHAR(L.SEND_DATE,'YYYY-MM-DD HH24:MI:SS') AS SEND_DATE
+		   , R.SUCCCYN
+		   , R.SUMMARY
+		   , L.TITLE
+		   , L.SENDER_EMAIL
+		FROM TB_SY_MAIL_REC R, TB_SY_MAIL_LOG L
+        WHERE R.MAIL_SEQ = L.MAIL_SEQ
+        AND R.MAIL_SEQ = #{mailSeq}
+        AND R.REC_SEQ = #{recSeq}
+    </select>
+    
+</mapper>
+ 

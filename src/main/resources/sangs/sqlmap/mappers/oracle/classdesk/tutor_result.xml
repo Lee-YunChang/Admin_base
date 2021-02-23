@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 클래스데스크 > 강사 > 성적관련 -->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskTutorResultMapper">
+	
+	<parameterMap id="courseMap" type="map">
+		<parameter property="P_COURSENO" 	javaType="java.lang.Integer" jdbcType="INTEGER" mode="IN" />
+		<parameter property="P_CSEQNO" 		javaType="java.lang.Integer" jdbcType="INTEGER" mode="IN" />
+    	<parameter property="R_RESULT" 		javaType="java.lang.String" jdbcType="VARCHAR" mode="OUT" />
+	</parameterMap>
+
+	<parameterMap id="cuserMap" type="map">
+		<parameter property="P_COURSENO" 	javaType="java.lang.Integer" jdbcType="INTEGER" mode="IN" />
+		<parameter property="P_CSEQNO" 		javaType="java.lang.Integer" jdbcType="INTEGER" mode="IN" />
+		<parameter property="P_CUSERNO" 	javaType="java.lang.Integer" jdbcType="INTEGER" mode="IN" />
+    	<parameter property="R_RESULT" 		javaType="java.lang.String" jdbcType="VARCHAR" mode="OUT" />
+	</parameterMap>
+	
+	<!-- 목록 호출 -->
+	<select id="getLeCourseUSerList" parameterType="dmap" resultType="emap">
+		SELECT 
+			X.*
+			, RANK() OVER (ORDER BY NVL(FINAL_VAL,0) DESC) RANK  
+			, TO_CHAR( (FRAMESEQ/FRAMECNT * 100) , '9999.00') PROG    
+            , ISPASS  
+		FROM
+			(
+				SELECT 
+				    A.CUSERNO,
+				   	TO_CHAR( A.PROGRESS_VAL, '9999.00')  PROGRESS_VAL,
+				   	TO_CHAR( A.EXAM_FINAL_VAL, '9999.00')  EXAM_FINAL_VAL,
+				   	TO_CHAR( A.ATTEND_VAL, '9999.00')  ATTEND_VAL,
+				   	NVL(TO_CHAR( A.FINAL_VAL, '9999.00'), 0) FINAL_VAL,
+				   	A.USERNO,    
+                    B.MBERNM AS USERNAME,  
+                    B.UNITY_ID AS USERID,   
+                    B.EMAIL,      
+                    B.MOBLPHON AS MOBILE,
+				    NVL((SELECT SUM( LENGTH(FRAME_COMP_STATUS) - LENGTH(REPLACE(FRAME_COMP_STATUS, '1')) ) FROM TB_LE_TREE_HIST WHERE CUSERNO = A.CUSERNO),0) FRAMESEQ,
+				    (SELECT SUM(FRAMECNT) FRAMECNT FROM TB_ED_COURSE_TREE WHERE COURSENO = #{SES_COURSENO}) FRAMECNT  ,
+				    NVL(A.ISPASS, 'N')ISPASS ,
+				    A.COMPCODE ,
+				    A.COMPDATE ,
+                    NVL(A.TARGETYN , 'N') AS TARGETYN 
+				FROM 
+                     TB_LE_COURSE_USER A
+                     INNER JOIN VW_TB_USERS B ON (A.USERNO = B.UNITY_MBERNO)
+                WHERE A.CSEQNO = #{SES_CSEQNO}
+				AND A.USEYN = 'Y'
+				AND A.USERNO= B.UNITY_MBERNO
+				<if test='isPass == "Y"'>
+					AND A.ISPASS = 'Y'
+				</if>
+				<if test='isPass == "N"'>
+					AND (A.ISPASS IS NULL OR A.ISPASS = 'N')
+				</if>
+				<if test='searchType == "ID"'>
+					AND B.UNITY_ID LIKE '%' || #{searchWord} || '%'
+				</if>
+				<if test='searchType == "NAME"'>
+					AND B.MBERNM LIKE '%' || #{searchWord} || '%'
+				</if>
+		) X 
+		WHERE 1=1    
+		<if test="targetYn != null and targetYn != ''">
+			AND X.TARGETYN = #{targetYn} 
+		</if>
+		ORDER BY  X.USERNAME ASC
+	</select>
+	
+	
+	
+	
+	<!-- 상시과정 목록 호출-->
+	<select id="getLeCourseAlwaysUSerList" parameterType="dmap" resultType="emap">
+		SELECT 
+	  		A.*
+	    FROM(
+			SELECT 
+				X.*,
+				<!-- RANK() OVER (ORDER BY to_number(FINAL_VAL)  DESC) RANK, -->
+	            TO_CHAR( (FRAMESEQ/FRAMECNT * 100) , '9999.00') PROG
+			FROM
+				(
+					SELECT 
+					    <!-- ROW_NUMBER() OVER (ORDER BY STARTDATE DESC) AS RNUM,
+			     	    ROW_NUMBER() OVER (ORDER BY STARTDATE ASC) AS NUM,
+	             	    COUNT(1) OVER() TOTALCNT,  -->
+			     	    ROWNUM AS RNUM,
+					    A.CUSERNO,
+					   	TO_CHAR( A.PROGRESS_VAL, '9999.00')  PROGRESS_VAL,
+					   	TO_CHAR( A.EXAM_MT_VAL, '9999.00')  EXAM_MT_VAL,
+					   	TO_CHAR( A.EXAM_FINAL_VAL, '9999.00')  EXAM_FINAL_VAL,
+					   	TO_CHAR( A.REPORT_VAL, '9999.00')  REPORT_VAL,
+					   	TO_CHAR( A.ATTEND_VAL, '9999.00')  ATTEND_VAL,
+					   	TO_CHAR( A.FINAL_VAL, '9999.00')  FINAL_VAL,
+					   	A.USERNO,    
+	                    B.MBERNM,  
+	                    B.UNITY_ID,   
+	                    B.EMAIL,      
+	                    B.MOBLPHON,
+	                    B.BIZNO,
+					    (SELECT SUM(FRAMESEQ)   FROM TB_LE_TREE_HIST WHERE CUSERNO = A.CUSERNO)  FRAMESEQ,
+					    (SELECT SUM(FRAMECNT) FRAMECNT FROM TB_ED_COURSE_TREE WHERE COURSENO = #{SES_COURSENO}) FRAMECNT,
+					    NVL(A.ISPASS, 'N') AS ISPASS ,
+					    A.COMPCODE,
+					    A.COMPDATE,
+					    A.STARTDATE,
+					    A.WDATE,
+					    B.COMNO,
+					    (SELECT COMNAME FROM TB_CT_COMPANY WHERE COMNO = B.COMNO) AS COMNAME
+					FROM TB_LE_COURSE_USER A, TB_CT_UNITY_MBER B 
+	                WHERE A.USERNO = B.UNITY_MBERNO 
+	                AND   A.CSEQNO = #{SES_CSEQNO}
+					AND   A.USEYN = 'Y'
+					
+					 <if test="sdate != null and sdate != ''">
+				      AND TO_CHAR (A.STARTDATE, 'YYYY-MM-DD') BETWEEN #{sdate} AND #{edate}
+					 </if>
+					
+					 <if test="compType != null and compType != ''">
+				    		 AND A.ISPASS = #{compType}
+					</if>
+					
+				    <if test="searchKeyword != null and searchKeyword != ''">
+				    	<if test="selectOption == 'A'">
+				    		 AND B.UNITY_ID LIKE '%'|| #{searchKeyword}||'%'
+				    	</if>
+				    	<if test="selectOption == 'B'">
+				    		 AND B.MBERNM LIKE '%'|| #{searchKeyword}||'%'
+				    	</if>
+				    	
+				    	<if test="selectOption == ''">
+				    		AND (B.UNITY_ID LIKE '%'|| #{searchKeyword}||'%' OR  B.MBERNM LIKE '%'|| #{searchKeyword}||'%')
+				    	</if>
+					</if>
+					ORDER BY STARTDATE DESC
+				)X 
+				ORDER BY  X.WDATE DESC
+		 ) A
+	    WHERE 1=1
+	 	 <if test="startNo != null and startNo != ''">
+			AND RNUM BETWEEN #{startNo} AND #{endNo}
+		</if> 	   
+		
+	</select>
+	
+	<!-- 성적 반영 -->
+	<update id="updateLeCourseUserInfo" parameterType="dmap">
+	/*updateLeCourseUserInfo*/
+		UPDATE 
+		    TB_LE_COURSE_USER SET  
+			    PROGRESS_VAL = #{progVal} 
+			    ,EXAM_FINAL_VAL = #{examFinalVal} 
+			    ,ATTEND_VAL = #{attendVal} 
+			    ,FEDATE = SYSDATE 
+			    ,FINAL_VAL = #{finalVal} 
+			    ,ISPASS = #{ispass}
+			    ,RANK = #{rank}
+			    <if test='compYN == "Y"'>
+			    ,COMPCODE = #{compCode}
+			    ,COMPDATE = SYSDATE
+			    </if>  
+		WHERE CUSERNO = #{cuserno} 
+	</update>
+	
+		<!-- 성적 반영 -->
+	<update id="updateLeCourseUserInfo2" parameterType="dmap">
+		UPDATE 
+		    TB_LE_COURSE_USER SET  
+			    PROGRESS_VAL = 0
+			    ,ATTEND_VAL = 0
+			    ,FEDATE = NULL 
+			    ,FINAL_VAL = #{finalVal}
+			    ,ISPASS = #{ispass}
+			    ,RANK = null
+			    ,COMPCODE = NULL
+			    ,COMPDATE = NULL
+		WHERE CUSERNO = #{cuserno} 
+	</update>
+	
+	<update id="updateLeCourseUserRankInfo" parameterType="dmap">
+		UPDATE TB_LE_COURSE_USER SET  
+		    RANK = #{rank} 
+		WHERE CUSERNO = #{cuserNo} 
+	</update>
+	
+	<select id="getEdCourseInfo" parameterType="dmap" resultType="emap">
+		SELECT 
+			SEQ_TITLE, MT_CTYPE_CODE 
+		FROM 
+			TB_ED_COURSE_SEQ A , TB_ED_COURSE B 
+		WHERE 
+			A.COURSENO = B.COURSENO 
+		AND 
+			A.COURSENO = #{SES_COURSENO}
+		AND 
+			A.CSEQNO = #{SES_CSEQNO}
+	</select>
+ 
+	<select statementType="CALLABLE" id="cuserCompExec"  resultType="map" parameterMap="cuserMap">
+		{CALL TB_COURSE_COMP_SYS_NICS.CUSER_COMP_EXEC (?, ?, ?, ?)}					 
+	</select>
+	
+	<select id="getEdCourseSeqInfo" parameterType="dmap" resultType="emap">
+		/*getEdCourseSeqInfo*/
+		SELECT 
+			A.COMP_VAL
+			, B.COMP_CODE 
+			, A.OPENTYPE
+		FROM 
+			TB_ED_COURSE_SEQ A
+			INNER JOIN TB_ED_COURSE B ON (A.COURSENO = B.COURSENO) 
+		WHERE CSEQNO = #{SES_CSEQNO}	
+	</select>
+	
+	<update id="updateCourseFinal" parameterType="dmap">
+		/*updateCourseFinal*/
+		UPDATE 
+			TB_ED_COURSE_SEQ 
+		SET
+	   		MT_CSEQ_STATUS_CODE = #{MT_CSEQ_STATUS_CODE}
+		WHERE CSEQNO = #{SES_CSEQNO}	
+	</update>
+	
+	<!-- 수료코드 키 생성 -->
+	<select id="getMaxCompCode" parameterType="dmap" resultType="int">
+		/*getMaxCompCode*/
+        SELECT NVL(MAX(SEQ)+1 ,1)
+        FROM TB_LE_COMP_SEQ 
+        WHERE YYYY = TO_CHAR(SYSDATE,'YYYY')
+        AND GUBUN = #{gubun_code}
+	</select>
+	
+	<update id="updateMaxCompCode" parameterType="dmap">
+		/*updateMaxCompCode*/
+		MERGE INTO TB_LE_COMP_SEQ A
+        USING DUAL
+            ON ( YYYY = TO_CHAR(SYSDATE,'YYYY') AND GUBUN = #{gubun_code}
+        )
+        WHEN MATCHED THEN
+         UPDATE SET
+            SEQ = #{compSeq}
+            , WDATE = SYSDATE
+        WHEN NOT MATCHED THEN
+         INSERT ( GUBUN
+				, YYYY
+				, SEQ
+				, WDATE
+		 )
+         VALUES (
+             #{gubun_code}
+			, TO_CHAR(SYSDATE,'YYYY')
+			, #{compSeq}
+			, SYSDATE
+		 )
+	</update>
+	
+	
+	<select id="getMtCtypeCode" parameterType="dmap" resultType="String">
+		SELECT MT_CTYPE_CODE FROM TB_ED_COURSE WHERE COURSENO = #{SES_COURSENO}
+	</select>
+	
+	 <insert id="insertFileInfo" parameterType="dmap">
+    INSERT
+      INTO TB_ED_COURSE_FILE
+           (
+               FILE_ID
+               , FILE_SEQ
+               , FILE_NAME
+               , ORGFILE
+               , SAVFILE
+               , FILE_SIZE
+               , FTYPE
+               , DOWNLOAD_COUNT
+               , SAVPATH
+               , COURSENO
+               , OPEN_AT
+               , CSEQNO
+               <if test="txtFileYn != null and txtFileYn != ''">
+               , TXT_FILE_YN
+               </if>
+           )
+           VALUES
+           (
+               (SELECT NVL(MAX(FILE_ID),0)+1 FROM TB_ED_COURSE_FILE)
+               , 1
+               , #{uploadFileOrgName}
+               , #{uploadFileOrgName}
+               , #{uploadFileSaveName}
+               , #{uploadFileSize}
+               , #{uploadFileExt}
+               , 0
+               , #{uploadFileFulltPath}
+               , #{courseno}
+               , #{openAt}
+               , #{cseqno}
+               <if test="txtFileYn != null and txtFileYn != ''">
+               , #{txtFileYn}
+               </if>
+           )
+    </insert>
+    
+    <insert id="insertLectureFileInfo" parameterType="dmap">
+    INSERT
+      INTO TB_ED_LECTURE_FILE
+           (
+               FILENO
+               , SLNO
+               , ORGFILE
+               , SAVFILE
+               , FSIZE
+               , SAVPATH
+               ,MT_TUTOR_FILE_CODE
+           )
+           VALUES
+           (
+               (SELECT NVL(MAX(FILENO),0)+1 FROM TB_ED_LECTURE_FILE)
+               , #{slno}
+               , #{uploadFileOrgName}
+               , #{uploadFileSaveName}
+               , #{uploadFileSize}
+               , #{uploadFileFulltPath}
+               , #{mtTutorFileCode}
+           )
+    </insert>
+    
+   	<select id="getCourseFileInfo" parameterType="dmap" resultType="emap">
+		/*getCourseFileInfo*/
+        SELECT
+        		FILE_ID 
+				, FILE_SEQ 
+				, FILE_NAME 
+				, FILE_SIZE 
+				, SAVPATH 
+				, ORGFILE 
+				, SAVFILE 
+				, REG_DATE 
+				, COURSENO 
+				, CSEQNO 
+				, OPEN_AT 
+        FROM TB_ED_COURSE_FILE 
+        WHERE 1=1
+        AND NVL(TXT_FILE_YN,'N') != 'Y' 
+        <if test="courseno != null and courseno != ''">AND COURSENO = #{courseno}</if>
+        <if test="cseqno != null and cseqno != ''">AND CSEQNO = #{cseqno}</if>
+        <if test="openAt != null and openAt != ''">AND OPEN_AT = #{openAt}</if>
+        <if test="fileId != null and fileId != ''">AND FILE_ID = #{fileId}</if>
+        AND DECODE( INSTR(SAVPATH, 'course', -1),0 , 'N' , 'Y' ) = 'N'
+    </select>
+    
+    <select id="getCourseTxtFileInfo" parameterType="dmap" resultType="emap">
+		/*getCourseFileInfo*/
+        SELECT
+        		FILE_ID 
+				, FILE_SEQ 
+				, FILE_NAME 
+				, FILE_SIZE 
+				, SAVPATH 
+				, ORGFILE 
+				, SAVFILE 
+				, REG_DATE 
+				, COURSENO 
+				, CSEQNO 
+				, OPEN_AT 
+        FROM TB_ED_COURSE_FILE 
+        WHERE 1=1
+        AND TXT_FILE_YN = 'Y'
+        <if test="courseno != null and courseno != ''">AND COURSENO = #{courseno}</if>
+        <if test="cseqno != null and cseqno != ''">AND CSEQNO = #{cseqno}</if>
+        <if test="openAt != null and openAt != ''">AND OPEN_AT = #{openAt}</if>
+        <if test="fileId != null and fileId != ''">AND FILE_ID = #{fileId}</if>
+    </select>
+	
+	<delete id="deleteFile" parameterType="dmap">
+		DELETE FROM TB_ED_COURSE_FILE 
+		WHERE 1=1
+		AND FILE_ID = #{fileId}
+	</delete>
+	
+	
+	<!-- 수료코드발급 > 구분코드 -->
+	<select id="getCompGubunInfo" resultType="string">
+        SELECT 
+		    (SELECT UPPER(SUBSTR(REF1,0,1)) FROM TB_CD_MT_SUB WHERE MT_SUB_CODE = A.MT_SC_CODE) gubun_code
+		FROM TB_ED_COURSE A
+		WHERE COURSENO = #{courseno}
+     </select>
+</mapper>

@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 클래스데스크 > 강사 > 메인화면 -->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskTutorMainMapper">
+
+	<!-- 사용자 CLASSDESK 접근권한  -->
+	<select id="getCourseUSerCount" resultType="emap" parameterType="dmap">
+		SELECT
+			COUNT(1) AS COURSECNT
+		FROM
+			TB_LE_COURSE_USER
+		WHERE USEYN = 'Y' 
+		AND   CUSERNO = #{cUserNo}
+	</select>
+
+
+	<!-- 클래스데스크 공통 헤더 타이틀 및 메뉴 제어  -->
+	<select id="getCourseMainController" resultType="emap" parameterType="dmap">
+		SELECT 
+			(SELECT MT_SUB_NAME FROM TB_CD_MT_SUB WHERE MT_SUB_CODE	= MT_CTYPE_CODE) AS MTCODE
+			, A.COURSETITLE
+			, B.SEQ_TITLE
+			, B.CLASS_DESK
+			, B.EVAL_PROGRESS
+			, B.EVAL_EXAM_MT
+			, B.EVAL_EXAM_FINAL
+			, B.EVAL_EXAM_MT+B.EVAL_EXAM_FINAL AS EVAL_EXAM_SUM
+			, B.EVAL_REPORT 
+			, B.EVAL_ATTEND
+			, B.OPENTYPE
+			, B.EDUDAY
+			, B.DESCRIPTION 
+            , B.TARGET  
+            , B.COMP_VAL
+            , B.PROGRESS
+		FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+		WHERE A.COURSENO = B.COURSENO 
+		AND   A.COURSENO = #{courseNo}
+		AND   B.CSEQNO = #{cSeqNo}
+	</select>
+
+
+	<!-- 메인  강사 정보  -->
+	<select id="getCourseMainTchInfo" resultType="emap" parameterType="dmap">
+		SELECT 
+			B.SEQ_TITLE
+			, B.PROGRESS
+			, A.DESCRIPTION
+			, B.TARGET
+			, B.COMP_VAL	 
+			, B.STUDY_SDATE
+			, B.STUDY_EDATE
+			, B.FIX_CNT
+			, (SELECT COUNT(1) FROM TB_LE_COURSE_USER WHERE CSEQNO = B.CSEQNO AND USEYN='Y') AS TOTCNT
+			, A.IMG1
+			, B.OPENTYPE
+		FROM TB_ED_COURSE A, TB_ED_COURSE_SEQ B
+		WHERE A.COURSENO = B.COURSENO
+		AND   A.COURSENO = #{SES_COURSENO}
+		AND   B.CSEQNO = #{SES_CSEQNO}
+	</select>
+	
+	<!-- 수강생정보(상시운영시 데이터 추출용) -->
+	<select id="getCuserInfo" resultType="emap" parameterType="dmap">
+		SELECT STARTDATE, ENDDATE  FROM TB_LE_COURSE_USER WHERE CUSERNO = #{SES_CUSERNO}
+	</select>
+	
+	<!-- 진도  -->
+	<select id="getCourseMainprogress" resultType="emap" parameterType="dmap">
+		SELECT
+			TO_CHAR(
+				NVL( 
+					( SELECT  
+						NVL(SUM(FRAMESEQ), 0)                 
+					  FROM TB_LE_TREE_HIST A                
+					  LEFT OUTER JOIN TB_LE_COURSE_USER B ON A.CUSERNO = B.CUSERNO AND B.USEYN = 'Y'               
+				      WHERE B.CSEQNO = #{SES_CSEQNO}  
+						<if test="SES_GRADENO != null and SES_GRADENO != ''">
+						 	<if test="SES_GRADENO == '1'">
+				            	AND A.CUSERNO = #{SES_CUSERNO} 
+							</if>
+						</if>
+					  )
+				  	/
+					DECODE(
+						(SELECT SUM(FRAMECNT) FROM TB_ED_COURSE_TREE WHERE COURSENO = #{SES_COURSENO})
+				        , 0, NULL
+				        ,(SELECT SUM(FRAMECNT) FROM TB_ED_COURSE_TREE WHERE COURSENO = #{SES_COURSENO})
+				  	)
+				, 0) * 100  
+			, '9999.00')
+		  AS USER_PRG
+		FROM DUAL
+	</select>
+
+
+
+	<sql id="selectItem_fragment">
+	 	AND  TO_CHAR(SYSDATE,'YYYYMMDD') <![CDATA[>=]]> TO_CHAR(SDATE,'YYYYMMDD')
+		<if test="SES_GRADENO != null and SES_GRADENO != ''">
+		<if test="SES_GRADENO == '1'">
+		AND TO_CHAR(SYSDATE,'YYYYMMDD') <![CDATA[<=]]> TO_CHAR(EDATE,'YYYYMMDD')
+		</if>
+		</if>
+	</sql>
+
+
+	<!--  과제 목록  -->  
+	<select id="getCourseMainReportList" resultType="emap" parameterType="dmap">
+		SELECT 
+			 A.REPORTNO
+		   , A.CSEQNO
+		   , A.TITLE
+		   , A.SDATE 
+		   , A.EDATE 
+		   , (SELECT COUNT(1) FROM TB_LE_REPORT_APPLY WHERE REPORTNO = A.REPORTNO AND OPENYN = 'Y') AS SCNT 
+		   , (SELECT COUNT(1) FROM TB_LE_COURSE_USER WHERE CSEQNO = A.CSEQNO AND USEYN = 'Y') AS TOTCNT
+		FROM TB_LE_REPORT A
+		WHERE CSEQNO = #{SES_CSEQNO}
+		AND  NVL(RESULTYN, 'N') = 'N'
+		AND  OPENYN   = 'Y'
+		<include refid="selectItem_fragment"/>
+		AND  ROWNUM <![CDATA[<]]> 3 
+        ORDER BY REPORTNO DESC
+	</select>
+
+
+	<!-- 설문 -->
+	<select id="getCourseMainPollList" resultType="emap" parameterType="dmap">
+		SELECT * FROM 
+			(
+				SELECT
+				 	ROW_NUMBER() OVER(ORDER BY A.POLLCSEQNO ASC) AS RNUM
+					, COUNT(*) OVER() TOTALCOUNT
+					, A.POLLCSEQNO
+					, A.TITLE
+					, TO_CHAR(A.SDATE, 'YYYY-MM-DD') SDATE
+					, TO_CHAR(A.EDATE, 'YYYY-MM-DD') EDATE
+					, A.CNT
+					, A.USEYN
+					, A.SUMMARY
+					, A.WRITER
+					, TO_CHAR(A.WDATE, 'YYYY-MM-DD') WDATE
+					, (SELECT COUNT(*) FROM TB_LE_COURSE_USER WHERE CSEQNO = A.CSEQNO) AS TOTALMEMBER
+				FROM
+					TB_LE_POLL A
+				WHERE 1=1
+					<if test="SES_CSEQNO != null and SES_CSEQNO != ''">
+						AND CSEQNO = #{SES_CSEQNO}
+					</if>
+					<if test="sdate != null and sdate != '' and edate != null and edate != '' ">
+						AND TO_CHAR(A.SDATE , 'YYYY-MM-DD') BETWEEN  #{sdate} AND #{edate}
+					</if>
+					<if test="sdate != null and sdate != '' and edate != null and edate != '' ">
+						AND TO_CHAR(A.EDATE , 'YYYY-MM-DD') BETWEEN  #{sdate} AND #{edate}
+					</if>
+		           	<if test="searchWord != null and searchWord != ''">
+						<if test="searchMode == 'writer'">
+						  AND WRITER LIKE '%'||#{searchWord}||'%'
+						</if>
+						<if test="searchMode == 'title'">
+					       AND TITLE LIKE '%'||#{searchWord}||'%'
+						</if>
+					</if>
+				ORDER BY POLLCSEQNO DESC
+			)
+		<!-- SELECT
+			  A.POLLCSEQNO
+			, A.CSEQNO
+			, A.TITLE
+			, A.SDATE
+			, A.EDATE
+			, (SELECT COUNT(1) FROM TB_LE_POLL_APPLY WHERE POLLCSEQNO = A.POLLCSEQNO AND OPENYN = 'Y') AS SCNT 
+		    , (SELECT COUNT(1) FROM TB_LE_COURSE_USER WHERE CSEQNO = A.CSEQNO AND USEYN='Y') AS TOTCNT
+		FROM 
+			TB_LE_POLL A
+			, TB_LE_POLL_QUIZ B
+		WHERE 
+			A.POLLCSEQNO = B.POLLCSEQNO
+			AND A.CSEQNO = #{SES_CSEQNO}
+			AND A.USEYN   = 'Y'
+			<if test='openType == "D"'>
+			AND  TO_CHAR(SYSDATE,'YYYYMMDD')  BETWEEN TO_CHAR(A.SDATE,'YYYYMMDD') AND TO_CHAR(A.EDATE,'YYYYMMDD')
+			</if>
+		ORDER BY B.QNO -->
+	</select>
+	
+	
+	<!-- 시험 리스트 -->
+	<select id="getCourseMainLectExamList" parameterType="dmap" resultType="emap" >
+		SELECT
+			  A.EXAMNO
+			, A.CSEQNO
+			, DECODE(A.EXAM_TYPE, 'M', '중간', 'F', '최종') AS EXAM_TYPE_NM
+			, A.TITLE
+			, A.SDATE
+			, A.EDATE
+			, A.USEYN
+			, (SELECT COUNT(1) FROM TB_LE_EXAM_APPLY WHERE EXAMNO = A.EXAMNO AND SUBMITYN = 'Y') AS SCNT
+			, (SELECT COUNT(1) FROM TB_LE_COURSE_USER WHERE CSEQNO = A.CSEQNO AND USEYN = 'Y') AS TOTCNT
+		FROM TB_LE_EXAM A
+		WHERE A.CSEQNO = #{SES_CSEQNO}
+		AND  NVL(RESULTYN, 'N') = 'N'
+		AND  OPENYN   = 'Y'
+		<include refid="selectItem_fragment"/>
+		AND  ROWNUM <![CDATA[<]]> 3 
+		ORDER BY EXAMNO DESC
+	</select>
+	
+	<select id="getCourseTreeList" parameterType="dmap" resultType="emap">
+		SELECT
+			SDAY
+			,SUBJECT
+		FROM TB_ED_COURSE_TREE
+		WHERE COURSENO = #{SES_COURSENO}
+		ORDER BY SDAY
+	</select>
+	
+	
+	<select id="getProgInfo" parameterType="dmap" resultType="emap" >
+	    SELECT 
+		    	PROG_END_CNT
+		    	, USERCNT
+		    	, TO_CHAR( NVL( AVG_PER , 0), 'FM990.00') AVG_PER
+		    	, TO_CHAR( NVL( PROG_PER  , 0), 'FM990.00')PROG_PER 
+		    	, TO_CHAR(EDATE, 'YYYY-MM-DD HH24:MI:SS') AS EDATE 
+		FROM (
+			     
+		    SELECT 
+					( SELECT COUNT(*) FROM TB_LE_COURSE_USER WHERE CSEQNO = #{SES_CSEQNO} AND USEYN = 'Y' AND PROGRESS_VAL >= 100) PROG_END_CNT,   
+					( SELECT COUNT(*) FROM TB_LE_COURSE_USER WHERE CSEQNO = #{SES_CSEQNO} AND USEYN='Y')  USERCNT, 
+		  		    ( SELECT 
+		    				 100 * ( AVG(T3.PROGRESS_VAL) / DECODE(T1.EVAL_PROGRESS, 0, NULL, T1.EVAL_PROGRESS) ) 
+		    		  FROM TB_LE_COURSE_USER T3
+		    		  WHERE T3.CSEQNO =  #{SES_CSEQNO} AND T3.USEYN = 'Y'
+		    		)  AVG_PER
+		    		,( SELECT
+		    			 100 * (NVL( T3.PROGRESS_VAL / DECODE(T1.EVAL_PROGRESS, 0, NULL, T1.EVAL_PROGRESS), 0)) 
+		    		  FROM TB_LE_COURSE_USER T3
+		    		  WHERE T3.CUSERNO = #{SES_CUSERNO}
+		    		)   PROG_PER, 
+		    		( SELECT 
+		    			MAX(T4.EDATE) 
+		    		 FROM TB_LE_TREE_HIST T4
+		    		 WHERE T4.CUSERNO IN (SELECT CUSERNO FROM TB_LE_COURSE_USER WHERE CSEQNO = #{SES_CSEQNO})
+		    		) EDATE        
+			FROM 
+			( 
+		  		SELECT EVAL_PROGRESS, CSEQNO
+				FROM TB_ED_COURSE_SEQ 
+			WHERE CSEQNO = #{SES_CSEQNO}
+			) T1 
+			<!-- GROUP BY CSEQNO -->
+		) T2
+	</select>
+	 
+</mapper>

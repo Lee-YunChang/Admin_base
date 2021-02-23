@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.common.mapper.CommonUserMapper">
+
+	<!-- 회원정보(통합회원코드기준)  -->
+	<select id="getUserInfo"  resultType="emap" parameterType="int">
+		SELECT
+            T1.UNITY_MBERNO AS USERNO
+            , T1.UNITY_ID AS USERID
+            , T1.MBERNM AS USERNAME 
+            , T1.EMAIL
+            , T1.MOBLPHON AS MOBILE  
+            , T1.MT_GRADE_CODE  
+            , (SELECT MT_SUB_NAME  FROM TB_CD_MT_SUB T3 WHERE T3.MT_SUB_CODE = T1.MT_GRADE_CODE) AS MT_GRADE_NAME
+            , T2.NUM_CD MT_GRADE_NUM
+            
+        FROM
+            TB_CT_UNITY_MBER T1, TB_CD_MT_SUB T2
+        WHERE 1=1
+            AND T1.MT_GRADE_CODE = T2.MT_SUB_CODE
+			AND T1.USERNO = #{userNo}
+	</select>
+	
+	<!-- 회원정보(LMS회원코드기준)  -->
+	<select id="getUserLmsInfo"  resultType="emap" parameterType="int">
+		SELECT
+            T1.UNITY_MBERNO AS USERNO
+            , T1.UNITY_ID AS USERID
+            , T1.MBERNM AS USERNAME 
+            , T1.EMAIL
+            , T1.MOBLPHON AS MOBILE  
+            , T1.MT_GRADE_CODE  
+            , T2.NUM_CD AS MT_GRADE_NUM
+            , T2.MT_SUB_NAME AS MT_GRADE_NAME
+            , (SELECT STATUS_GB FROM TB_CT_COMPANY WHERE COMNO = T1.COMNO) AS STATUS_GB
+        FROM
+            VW_TB_USERS T1, TB_CD_MT_SUB T2
+        WHERE 1=1
+            AND T1.MT_GRADE_CODE = T2.MT_SUB_CODE
+            AND T1.UNITY_MBERNO = #{userNo}
+	</select>
+	
+	<!-- 로그인 회원정보 가져오기 -->
+	<select id="getLoginUserInfo"  resultType="emap" parameterType="dmap">
+		SELECT 
+             A.UNITY_MBERNO AS USERNO
+            , A.UNITY_ID AS USERID  
+            , A.COMNO
+            , UNITY_PASSWORD AS PWD
+            , A.BIZNO                 
+            , A.MT_GRADE_CODE
+            , A.MT_JOB_KND_CODE
+            , A.SECSN_AT AS CANCEL_YN 
+            , A.MBERNM AS USERNAME
+            , (SELECT C.STATUS_GB FROM TB_CT_COMPANY C WHERE C.COMNO = A.COMNO) STATUS_GB
+            , NVL(LOGIN_FAIL_CNT, 0) AS LOGIN_FAIL_CNT 
+            , DECODE(MT_GRADE_CODE, 'AA9999', 100, 'AA5000', 50, 1) AS GRADECODE
+        FROM TB_CT_UNITY_MBER A
+        WHERE UNITY_ID = #{userId}
+        AND SECSN_AT = 'N'
+	</select>
+	
+	
+	<!-- 
+	공통 > 개인정보조회이력관리  
+	-->
+	<insert id="insertMbrTransLog"  parameterType="dmap">
+		INSERT INTO TB_SY_TRANS_LOG (
+	          TRANS_SEQ
+			, SYS_GB
+			, TRANS_USERNO
+			, TRANS_USERID
+			, TRANS_USERNAME
+			, TRANS_IP
+			, TRANS_GB
+			, TRANS_DT
+			, SUMMARY
+			, PROG_ID
+			, PROG_NM
+    	) VALUES (
+          	  (SELECT NVL(MAX(TRANS_SEQ),0) + 1 FROM TB_SY_TRANS_LOG)
+	        , #{sysGb}
+	        , #{transUserNo}
+	        , #{transUserId}
+	        , #{transUserName}
+	        , #{transIp}
+	        , #{transGb}
+	        , SYSDATE
+	        , #{summary}
+	        , #{progId}
+	        , #{progNm}
+    	)
+	</insert>
+	
+	<!-- 
+	공통 > 로그인이력관리  
+	-->
+	<insert id="insertMbrLoginLog" parameterType="dmap">
+		INSERT INTO TB_SY_LOGIN_LOG (
+	          LOGIN_SEQ
+			, SYS_GB
+			, TRANS_USERNO
+			, TRANS_USERID
+			, TRANS_USERNAME
+			, TRANS_IP
+			, TRANS_GB
+			, TRANS_DT
+			, SUMMARY
+    	) VALUES (
+          	  (SELECT NVL(MAX(LOGIN_SEQ),0) + 1 FROM TB_SY_LOGIN_LOG)
+	        , #{sysGb}
+	        , #{transUserNo}
+	        , #{transUserId}
+	        , #{transUserName}
+	        , #{transIp}
+	        , #{transGb}
+	        , SYSDATE
+	        , #{summary}
+    	)
+	</insert>
+	
+	<!-- 사용자테이블 로그인 실패 횟수 업데이트 -->
+	<update id="updateLoginFailCntInfo" parameterType="dmap">
+		UPDATE TB_CT_UNITY_MBER SET 
+			LOGIN_FAIL_CNT = NVL( (SELECT LOGIN_FAIL_CNT FROM TB_CT_UNITY_MBER WHERE UNITY_ID = #{userId}) , 0) +1
+		WHERE UNITY_ID = #{userId}
+	</update>
+	
+	<!-- 로그인 성공 (실패횟수 0으로 초기화) -->
+	<update id="updateLoginSuccessInfo" parameterType="dmap">
+		UPDATE TB_CT_UNITY_MBER SET 
+			LOGIN_FAIL_CNT = 0
+		WHERE UNITY_ID = #{userId}
+	</update>
+	
+	<select id="selectLoginFailCntInfo"  resultType="emap" parameterType="dmap">
+		SELECT NVL(LOGIN_FAIL_CNT,0) AS LOGIN_FAIL_CNT
+		FROM TB_CT_UNITY_MBER
+		WHERE UNITY_ID = #{userId}
+	</select>
+	
+	<!-- 로그인 세션아이디 체크 -->
+	<select id="getLoginSessionInfo"  resultType="emap" parameterType="dmap">
+		SELECT
+			UNITY_MBERNO
+			, SESSION_ID
+			, LOGIN_DATE
+			, MBERNM
+		    , MT_GRADE_CODE
+		FROM
+			TB_CT_UNITY_MBER
+		WHERE UNITY_MBERNO = #{paramUserNo}
+	</select>
+	  
+	<!-- 접근 ip 체크 -->
+	<select id="getAccessIpList" resultType="emap" parameterType="dmap">
+        SELECT * FROM TB_CD_MT_SUB
+        WHERE MT_CODE= #{accsMtCode}
+        AND USEYN = 'Y'
+        AND MT_SUB_NAME IN (#{clientIp})
+    </select>
+</mapper>

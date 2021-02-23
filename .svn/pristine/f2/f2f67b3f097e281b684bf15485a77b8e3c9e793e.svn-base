@@ -1,0 +1,59 @@
+<div style="font-size:13px/100%;font-family:Malgun Gothic, Dotum, Arial, sans-serif;line-height:120%;width:720px;border:5px solid #6db3e6;margin:0;padding:0;">
+	<!-- 헤더영역 -->
+	<div style="padding:20px;background-color:#f2f2f2;border-bottom:1px solid #dfdfdf;position:relative;overflow:hidden;margin:0;">
+		<!-- 토파스 로고 -->
+		<h1 style="float:left;margin:0;padding:0;">
+			<img alt="TOPAS" src="http://edu.topasweb.com/common/mail/images/logo.png" /></h1>
+		<!-- //토파스 로고 --><!-- 메일 종류 알림 -->
+		<h2 style="float:right;font-size:12px;font-family:dotum, arial, sans-serif;font-weight:normal;text-align:right;color:#333;margin:0;padding:0;">
+			<strong style="color:#4b97ae !important;">[TOPAS 아카데미] 수강취소</strong><br />
+			현장의 생생한 실무교육! 토파스 사이버 아카데미가 함께 합니다.</h2>
+		<!-- //메일 종류 알림 --></div>
+	<!-- //헤더영역 --><!-- 내용영역 -->
+	<div style="padding:20px;margin:0;">
+		<!-- 대표 메세지 -->
+		<p style="text-align:center;font-size:24px;font-weight:600;letter-spacing:-0.05em;color:#333;line-height:100%;margin:0 0 20px 0;padding:0 0 20px 0;border-bottom:2px solid #6db3e6;">
+			토파스 아카데미 <span style="color:#df7539 !important;">$SEQ1</span>과정 수강취소 완료되었습니다.</p>
+		<!-- //대표 메세지 --><!-- 소 타이틀 -->
+		<div style="height:16px;font-size:14px;font-weight:bold;line-height:16px;margin:0 0 15px 0;">
+			<img alt="bullet" src="http://edu.topasweb.com/common/mail/images/bu_tit1.gif" style="vertical-align:top; margin-right:10px;" /> 과정정보</div>
+		<!-- //소 타이틀 --><!-- 테이블 영역 -->
+		<table style="width:100%;border-collapse:separate;border-spacing:0;font-size:12px;border-top:1px solid #519ed5;border-bottom:1px solid #519ed5;">
+			<colgroup>
+				<col width="120" />
+				<col width="" />
+			</colgroup>
+			<tbody>
+				<!-- 테이블 가장 첫번째 줄 th, td는 border-top 삭제 -->
+				<tr>
+					<th style="padding:7px 10px;text-align:center;font-weight:bold;background-color:#c9ddea;color:#1567a6;">
+						과정명</th>
+					<td style="text-align:left;min-height:25px;padding:6px 10px;line-height:150%;color:#707070;">
+						$SEQ2</td>
+				</tr>
+				<tr>
+					<th style="border-top:1px solid #fff;padding:7px 10px;text-align:center;font-weight:bold;background-color:#c9ddea;color:#1567a6;">
+						취소일</th>
+					<td style="border-top:1px solid #dfdfdf;text-align:left;min-height:25px;padding:6px 10px;line-height:150%;color:#707070;">
+						$SEQ3</td>
+				</tr>
+			</tbody>
+		</table>
+		<!-- //테이블 영역 -->
+		<div style="margin:20px 0 0 0;padding:0;">
+			<p style="font-size:12px;margin:0;padding:0;">
+				※ 환불은 수강취소와는 별도로 신청해 주셔야 하며 <a href="$SEQ4/repay/repay.do?subcmd=form" target="_blank">아카데미&gt;환불신청</a> 메뉴를 통해 신청해 주시기 바랍니다.</p>
+		</div>
+	</div>
+	<!-- //내용영역 --><!-- 푸터영역 -->
+	<div style="margin:0;padding:0 20px 20px 20px;">
+		<!-- 알림메세지 -->
+		<p style="height:40px;line-height:40px;color:#333;font-family:dotum, arial, sans-serif;padding:0 0 0 20px;margin:0;background-color:#f2f2f2;border:1px solid #dfdfdf;font-size:12px;">
+			<img alt="bullet" src="http://edu.topasweb.com/common/mail/images/ico_alert.png" style="vertical-align:middle; margin-right:10px;" />본 메일은 발신전용이므로 회신하실 경우 답변되지 않습니다.</p>
+		<!-- //알림메세지 --><!-- 주소 -->
+		<p style="color:#999;font-size:12px;font-family:dotum, arial, sans-serif;margin:15px 0 0 0;line-height:120%;">
+			<img alt="TOPAS" src="http://edu.topasweb.com/common/mail/images/logo_gray.png" style="vertical-align:top; margin-right:15px;" /> <span style="display:inline-block;"> 서울시 중구 소공 51번지 한진빌딩 신관 19층 대표전화 : 1566-0014<br />
+			Copyright (c) TOPAS All RIghts Reserved. </span></p>
+		<!-- //주소 --></div>
+	<!-- //푸터영역 --></div>
+<!-- //실제 적용 영역 -->

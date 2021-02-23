@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<weblogic-web-app xmlns="http://xmlns.oracle.com/weblogic/weblogic-web-app" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.oracle.com/weblogic/weblogic-web-app http://xmlns.oracle.com/weblogic/weblogic-web-app/1.6/weblogic-web-app.xsd">
+     <!-- <session-descriptor>
+        <timeout-secs>3600</timeout-secs>
+           <cookie-name>JSESSIONID</cookie-name>
+           <persistent-store-type>coherence-web</persistent-store-type>
+     </session-descriptor> -->
+     <virtual-directory-mapping>
+        <local-path>/app/lms</local-path>
+        <url-pattern>/edu-data/*</url-pattern>
+     </virtual-directory-mapping>
+	<context-root>/</context-root>
+</weblogic-web-app>

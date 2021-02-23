@@ -1,0 +1,493 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 클래스데스크 > 강사 > 토론관련 -->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskTutorDiscussMapper">
+	<resultMap id="clobMap" type="emap">      
+        <result property="CONTENT" column="CONTENT" jdbcType="CLOB" javaType="java.lang.String"/>
+        <result property="AN_CONTENT" column="AN_CONTENT" jdbcType="CLOB" javaType="java.lang.String"/>
+    </resultMap>  
+
+	<!-- <sql id="selectItem_fragment">
+	 		A.REPORTNO
+		   , A.CSEQNO
+		   , A.TITLE 
+		   , A.SUMMARY
+		   , A.FILE_PATH
+		   , A.FILE01_ORG
+		   , A.FILE01_SAVE
+		   , A.FILE02_ORG 
+		   , A.FILE02_SAVE
+		   , A.FILE03_ORG
+		   , A.FILE03_ORG
+		   , A.FILE04_SAVE
+		   , A.FILE04_ORG 
+		   , A.SDATE 
+		   , A.EDATE  
+		   , A.EVAL
+		   , A.OPENYN 
+		   , A.RESULTYN
+		    , (SELECT COUNT(1) FROM TB_LE_REPORT_APPLY WHERE REPORTNO = A.REPORTNO AND OPENYN = 'Y') AS SCNT 
+		    , (SELECT COUNT(1) FROM TB_LE_COURSE_USER WHERE CSEQNO = A.CSEQNO AND USEYN = 'Y') AS TOTCNT 
+		   , CASE
+                WHEN TO_CHAR(EDATE,'YYYYMMDD')  <![CDATA[<]]> TO_CHAR(SYSDATE,'YYYYMMDD') THEN 'Y' 
+                ELSE 'N'
+             END AS ENDYN   
+	</sql> -->
+	
+	<!-- 토론 등록 -->
+	<insert id="insertDiscussInfo" parameterType="dmap">
+		INSERT INTO
+			TB_ED_BBS (
+				TITLE
+				<if test="dscsnSdate != null and dscsnSdate != ''">
+				,DSCSN_SDATE
+				</if>
+				<if test="dscsnEdate != null and dscsnEdate != ''">
+				,DSCSN_EDATE
+				</if>
+				,ORDTM_AT
+				,OPEN_AT
+				,TOPYN
+				,CONTENT
+				,BBSNO
+		        ,WRITER
+		        ,WDATE
+		        ,RCNT
+		        ,GRPNO
+		        ,REFSTEP
+		        ,USERNO
+		        ,BCATENO
+		        ,PWD
+		        ,ETC_INFO01
+		        ,POPYN
+		        ,POP_PATH
+		        ,POP_FILE
+		        ,POP_WIDTH
+		        ,POP_HEIGHT
+		        ,COURSENO
+		        ,CSEQNO
+			)
+		VALUES
+			(
+				#{title}
+				<if test="dscsnSdate != null and dscsnSdate != ''">
+				,#{dscsnSdate}
+				</if>
+				<if test="dscsnEdate != null and dscsnEdate != ''">
+				,#{dscsnEdate}
+				</if>
+				,#{ordtmAt}
+				,#{openAt}
+				,#{topYn}
+				,#{summary}
+				,#{bbsNo}
+		        ,#{SES_USERNAME}
+		        ,SYSDATE
+		        ,0
+		        ,#{bbsNo}
+		        ,0
+		        ,#{SES_USERNO}
+		        <choose>
+			        <when test="bcateno != null and bcateno != ''">
+			            ,#{bcateno}
+			        </when>
+			        <otherwise>
+			            ,(
+			                SELECT MIN(BCATENO) 
+			                  FROM TB_ED_BBS_CATEGORY 
+			                 WHERE PBCATENO = #{pbcateno}
+			            )
+			        </otherwise>
+			    </choose>
+		        ,''
+		        ,''
+		        ,#{popYn}
+		        ,#{popPath}
+		        ,#{popFile}
+		        ,#{popWidth}
+		        ,#{popHeight}
+		        ,#{SES_COURSENO}
+		        ,#{SES_CSEQNO}
+			)
+	</insert> 
+ 
+ <!-- 토론 답변 등록 -->
+	<insert id="insertDiscussReplyInfo" parameterType="dmap">
+		INSERT INTO
+			TB_ED_BBS (
+				TITLE
+				<if test="dscsnSdate != null and dscsnSdate != ''">
+				,DSCSN_SDATE
+				</if>
+				<if test="dscsnEdate != null and dscsnEdate != ''">
+				,DSCSN_EDATE
+				</if>
+				,ORDTM_AT
+				,OPEN_AT
+				,TOPYN
+				,CONTENT
+				,BBSNO
+		        ,WRITER
+		        ,WDATE
+		        ,RCNT
+		        ,GRPNO
+		        ,REFLEVEL
+		        ,REFSTEP
+		        ,USERNO
+		        ,BCATENO
+		        ,PWD
+		        ,ETC_INFO01
+		        ,POPYN
+		        ,POP_PATH
+		        ,POP_FILE
+		        ,POP_WIDTH
+		        ,POP_HEIGHT
+		        ,COURSENO
+		        ,CSEQNO
+			)
+		VALUES
+			(
+				#{title}
+				<if test="dscsnSdate != null and dscsnSdate != ''">
+				,#{dscsnSdate}
+				</if>
+				<if test="dscsnEdate != null and dscsnEdate != ''">
+				,#{dscsnEdate}
+				</if>
+				,#{ordtmAt}
+				,#{openAt}
+				,#{topYn}
+				,#{summary}
+				,(SELECT NVL(MAX(BBSNO),0)+1 FROM TB_ED_BBS) 
+		        ,#{SES_USERNAME}
+		        ,SYSDATE
+		        ,0
+		        ,#{grpno}
+		        ,#{refLevel}
+		        ,#{refStep}+1
+		        ,#{SES_USERNO}
+		        <choose>
+			        <when test="bcateno != null and bcateno != ''">
+			            ,#{bcateno}
+			        </when>
+			        <otherwise>
+			            ,(
+			                SELECT MIN(BCATENO) 
+			                  FROM TB_ED_BBS_CATEGORY 
+			                 WHERE PBCATENO = #{pbcateno}
+			            )
+			        </otherwise>
+			    </choose>
+		        ,''
+		        ,''
+		        ,#{popYn}
+		        ,#{popPath}
+		        ,#{popFile}
+		        ,#{popWidth}
+		        ,#{popHeight}
+		        ,#{SES_COURSENO}
+		        ,#{SES_CSEQNO}
+			)
+	</insert> 
+ 
+ 
+ 	<!-- 파일 bbsno 등록 -->
+    <update id="updateFileBbsno" parameterType="dmap">
+    	UPDATE TB_ED_BBS_FILE
+		   SET BBSNO = #{bbsNo}
+		 WHERE FILE_ID = #{fileId}
+    </update>
+    
+   	<select id="getMaxBoardNo" resultType="int">
+		SELECT NVL(MAX(BBSNO),0)+1 
+		  FROM TB_ED_BBS
+	</select>
+	
+	<!-- 토론 수정 -->
+	<update id="updateBoardInfo" parameterType="dmap">
+		UPDATE TB_ED_BBS 
+			SET 
+					OPEN_AT = #{openAt}
+					, TOPYN = #{topYn}
+					, WDATE = SYSDATE
+					<if test="title != null and title != ''">
+					, TITLE = #{title}
+					</if>
+					<if test="summary != null and summary != ''">
+					, CONTENT = #{summary}
+					</if>
+					<if test="dscsnSdate != null and dscsnSdate != ''">
+					, DSCSN_SDATE = #{dscsnSdate}
+					</if>
+					<if test="dscsnEdate != null and dscsnEdate != ''">
+					, DSCSN_EDATE = #{dscsnEdate}
+					</if>
+					<if test="ordtmAt != null and ordtmAt != ''">
+					, ORDTM_AT = #{ordtmAt}
+					</if>
+		 WHERE BBSNO = #{bbsNo} 
+	</update>
+	
+	<!-- 토론 리스트 -->
+	<select id="getCourseDiscussList" resultType="emap" parameterType="dmap">
+	SELECT a.* 
+		FROM 
+ 			(
+ 			 SELECT a.*
+ 			 	, ROWNUM AS RNUM 
+ 			 	, COUNT(*) OVER() TOTALCOUNT
+ 			 FROM 
+	            (SELECT a.*
+	           		, (SELECT COUNT(*) FROM TB_ED_BBS_RCMND B
+			        	WHERE B.BBSNO = A.BBSNO
+			        	AND RCMND_SE_CODE = 'R' 
+			        	) AS RECCNT
+		        	, (SELECT COUNT(*) FROM TB_ED_BBS_RCMND B
+			        	WHERE B.BBSNO = A.BBSNO
+			        	AND RCMND_SE_CODE = 'J' 
+			        	) AS OPPCNT	
+			        , (SELECT B.REFSTEP FROM TB_ED_bbs B WHERE B.BBSNO = A.BBSNO) AS STEP
+			        , (SELECT B.GRPNO FROM TB_ED_bbs B WHERE B.BBSNO = A.BBSNO) AS GNO
+	             FROM
+	                (  
+						SELECT 
+	 					  CASE WHEN (CSEQNO = #{SES_CSEQNO})    THEN 'N' ELSE 'Y' END AS COMYN,  BBSNO, COURSENO, CSEQNO, WRITER, TO_CHAR(WDATE,'yyyy-mm-dd') AS WDATE, TITLE, RCNT, Z.BCATENO, Z.BCATENAME, ANYN, Y.POPYN, Y.POP_PATH, Y.POP_FILE,
+						  '-' AS USERID, '-' AS SAVPATH, '-' AS SAVFILE, '-' AS ORGFILE, Z.BBSTYPE, Z.INTYPE, GRPNO, REFLEVEL, REFSTEP,
+						  CASE WHEN (SYSDATE - WDATE <![CDATA[ <= ]]> 1 AND SYSDATE - WDATE <![CDATA[ > ]]> 0) THEN 'new_btn' ELSE 'null_btn'  END AS NEWBTN
+	                      , TOPYN, USERNO, TO_CHAR(DSCSN_EDATE , 'YYYYMMDD')AS DSCSN_EDATE
+	                      , ROUND(SYSDATE - WDATE) AS DATE_DIFF
+	                      , ORDTM_AT
+	                      <!-- COUNT(BBSNO) OVER() TOTAL  -->
+						FROM
+						(
+						  SELECT * FROM (
+						    SELECT X.* FROM (
+						      SELECT BBSNO BNO
+	                            FROM TB_ED_BBS
+	                           WHERE 1=1
+						      <choose>
+			                        <when test="bcateno != null and bcateno != ''">
+			                            AND BCATENO = #{bcateno}
+			                        </when>
+			                        <otherwise>
+			                            AND BCATENO IN (
+			                                    SELECT BCATENO 
+			                                      FROM TB_ED_BBS_CATEGORY 
+			                                     WHERE PBCATENO = #{pbcateno}
+			                               )  
+			                        </otherwise>
+			                    </choose>
+			                    <if test="searchWord != null and searchWord != ''">
+			                            AND TITLE LIKE '%'|| #{searchWord} ||'%'
+			                    </if>
+						      ORDER BY GRPNO DESC, BBSNO ASC) X
+						  )X
+						) X, TB_ED_BBS Y, TB_ED_BBS_CATEGORY Z
+						WHERE X.BNO = Y.BBSNO AND Y.BCATENO = Z.BCATENO 
+						AND Y.COURSENO = #{SES_COURSENO}
+						AND (Y.CSEQNO = #{SES_CSEQNO} OR Y.CSEQNO= 0 ) 
+			   ) a 
+			   ORDER BY TOPYN DESC ,GRPNO DESC, BBSNO ASC
+				)a
+			)a
+			WHERE RNUM BETWEEN #{startNo} AND #{endNo}
+	</select>
+	
+	<select id="getDiscussView" resultType="emap" parameterType="dmap">
+		SELECT A.BBSNO, 
+		       WRITER, 
+		       TO_CHAR(WDATE,'YYYY-MM-DD') AS WDATE, 
+		       TITLE, 
+		       DBMS_LOB.SUBSTR(CONTENT, DBMS_LOB.GETLENGTH(CONTENT), 1)AS CONTENT ,
+		       RCNT, 
+		       GRPNO, 
+		       ISCMT,
+		       REFLEVEL, 
+		       REFSTEP,
+		       A.USERNO,
+		       (SELECT UNITY_MBERNO FROM TB_CT_UNITY_MBER WHERE UNITY_MBERNO = A.USERNO) AS USERID,
+		        A.USERNO ,
+		        A.BCATENO,
+		        D.BCATENO AS PBCATENO,
+		        A.TOPYN,
+		       '' AS FILE_ID,
+		       '' AS ORGFILE,
+		       '' AS FILE_SIZE,
+		       '' AS SAVFILE,
+		       '' AS SAVPATH,
+		       A.AN_CONTENT,
+		       A.POPYN, A.POP_PATH, A.POP_FILE, A.POP_WIDTH, A.POP_HEIGHT,
+		       D.ISCMT, D.ISPOP, D.ISANSWER, D.ISTOP,
+		       A.POP_WIDTH, A.POP_HEIGHT, A.COURSENO,
+		       (SELECT BCATENAME FROM TB_ED_BBS_CATEGORY WHERE A.BCATENO = BCATENO) BCATENAME,
+		       TO_CHAR(DSCSN_SDATE,'yyyy-mm-dd') AS DSCSN_SDATE, 
+		       TO_CHAR(DSCSN_EDATE,'yyyy-mm-dd') AS DSCSN_EDATE,
+		       TOPYN,
+		       ORDTM_AT,
+		       OPEN_AT
+		  FROM TB_ED_BBS A, 
+		       TB_ED_BBS_CATEGORY D  
+		 WHERE SUBSTR(A.BCATENO,1,3)||0 = D.BCATENO
+		 		<choose>
+                        <when test="bbsNo != null and bbsNo != ''">
+                            AND A.BBSNO = #{bbsNo}
+                        </when>
+                        <otherwise>
+                            AND A.BBSNO = 
+                                    (SELECT MAX(BBSNO) 
+							 	   	  FROM TB_ED_BBS 
+							 	   	 WHERE BCATENO IN 
+							           (SELECT BCATENO 
+							             FROM TB_ED_BBS_CATEGORY 
+								            WHERE PBCATENO = #{pbcateno}))  
+                        </otherwise>
+               </choose>
+	</select>
+	
+	<select id="getGrpNo" resultType="emap" parameterType="dmap">
+		SELECT BBSNO FROM TB_ED_BBS 
+		WHERE GRPNO=#{bbsNo}
+	</select>
+	
+	<select id="getFileList" resultType="emap" parameterType="dmap">
+		SELECT FILE_ID,
+		       ORGFILE,
+		       SAVFILE,
+		       SAVPATH,
+		       FILE_SIZE,
+		       BBSNO
+		  FROM TB_ED_BBS_FILE 
+		 WHERE BBSNO = #{bbsNo}
+	</select>
+	
+	<update id="updateDiscussViewCnt" parameterType="dmap">
+		UPDATE TB_ED_BBS 
+	       SET RCNT = RCNT+1 
+	 WHERE BBSNO = #{bbsNo}
+	</update>
+	
+	<!-- 추천 반대 수 카운트 -->
+	<select id="getRcmndCount" resultType="emap" parameterType="dmap">
+		SELECT
+				RCMNDNO,
+				BBSNO,
+				RCMND_USERNO,
+				RCMND_SE_CODE,
+				RCMND_DATE,
+				(SELECT COUNT(RCMND_SE_CODE) FROM TB_ED_BBS_RCMND WHERE BBSNO = #{bbsNo} AND RCMND_SE_CODE = 'R') AS RCNT,
+				(SELECT COUNT(RCMND_SE_CODE) FROM TB_ED_BBS_RCMND WHERE BBSNO = #{bbsNo} AND RCMND_SE_CODE = 'J') AS JCNT
+		 FROM
+				TB_ED_BBS_RCMND X
+	</select>
+
+	<!-- 사용자 일련번호 불러오기 -->
+	<select id="getUnityMberno" resultType="String" parameterType="String">
+		SELECT UNITY_MBERNO 
+		  FROM TB_CT_UNITY_MBER 
+		 WHERE UNITY_ID=#{unityId}
+	</select>
+	
+	<!-- 추천 반대 정보 입력 -->
+	<insert id="insertRcmndInfo" parameterType="dmap">
+		INSERT INTO
+				TB_ED_BBS_RCMND 
+				(
+					BBSNO,
+					RCMND_USERNO,
+					RCMND_SE_CODE, 
+					RCMND_DATE
+				)
+			VALUES
+				(
+					#{bbsNo},
+					#{unityMberno},
+					#{rcmndSeCode},
+					sysdate
+				)
+	</insert>
+	
+	<!-- 이미 추천/반대한 사용자인지 확인 -->
+	<select id="checkRcmnd" resultType="emap" parameterType="dmap">
+		SELECT RCMND_USERNO
+		  FROM TB_ED_BBS_RCMND 
+		 WHERE BBSNO = #{bbsNo} AND RCMND_USERNO=#{unityMberno}
+	</select>
+
+	<!-- 상위 글의 공개여부, 상위고정여부 수정 시 댓글도 함께 수정 -->
+	 <update id="updateReplyList" parameterType="dmap">
+	 	UPDATE TB_ED_BBS
+	 		   SET 
+		 			TOPYN = #{topYn}
+		 			, OPEN_AT = #{openAt}
+	 	WHERE GRPNO = #{grpno}
+	 </update>
+	 
+	 <insert id="insertEdDataFile" parameterType="dmap">
+		INSERT INTO TB_ED_COURSE_FILE(
+			FILE_ID
+			,BBSNO
+			,FILE_SEQ
+			,ORGFILE
+			,SAVFILE
+			,FILE_SIZE
+			,SAVPATH
+			,FTYPE
+			,REG_DATE
+			,FILE_NAME
+		)
+		VALUES (
+			(SELECT NVL(MAX(FILE_ID) , 0)+1 FROM TB_ED_COURSE_FILE)
+			, #{bbsNo}
+			, (SELECT NVL(MAX(FILE_SEQ),0)+1 FROM TB_ED_COURSE_FILE WHERE BBSNO = #{bbsNo})
+			, #{uploadFileOrgName}
+			, #{uploadFileSaveName}
+			, #{uploadFileSize}
+			, #{uploadFileFulltPath}
+			, #{uploadFileExt}
+			, SYSDATE
+			, #{uploadFileOrgName}
+		)
+	</insert>
+	
+	<delete id="deleteEdDataFile" parameterType="dmap">
+		DELETE FROM TB_ED_COURSE_FILE 
+		WHERE 1=1
+		<if test="fileId != null and fileId != ''">
+		AND FILE_ID = #{fileId}
+		</if>
+		<if test="bbsNo != null and bbsNo != ''">
+		AND BBSNO = #{bbsNo}
+		</if> 
+	</delete>
+	
+	<select id="getCourseFileList" resultType="emap" parameterType="dmap">
+        SELECT 
+               FILE_ID
+               , FILE_SEQ
+               , FILE_NAME
+               , FILE_SIZE
+               , FILE_MASK
+               , BBSNO
+               , FTYPE
+               , SAVPATH
+               , ORGFILE
+               , SAVFILE
+               , REG_DATE
+               , COURSENO
+               , ROWNUM AS FILECNT
+               , COUNT(*) OVER() FILETOTALCOUNT
+          FROM TB_ED_COURSE_FILE
+         WHERE BBSNO = #{bbsNo}
+    </select> 
+    
+    	<select id="getFileInfo2" resultType="emap" parameterType="dmap">
+		SELECT SAVPATH
+			, ORGFILE
+			, SAVFILE
+		FROM TB_ED_COURSE_FILE
+		WHERE BBSNO =  #{bbsNo}
+		AND FILE_ID = #{fileId}
+		AND FILE_SEQ = #{fileSeq}
+   </select>
+</mapper>

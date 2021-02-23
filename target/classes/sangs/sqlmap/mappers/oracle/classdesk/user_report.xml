@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 클래스데스크 > 학생 > 과제관련 -->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskUserReportMapper">
+
+
+<sql id="selectItem_fragment">
+	 		A.REPORTNO
+		   , A.CSEQNO
+		   , A.TITLE 
+		   , A.SUMMARY
+		   , A.FILE_PATH
+		   , A.FILE01_ORG
+		   , A.FILE01_SAVE
+		   , A.FILE02_ORG 
+		   , A.FILE02_SAVE
+		   , A.FILE03_ORG
+		   , A.FILE03_ORG
+		   , A.FILE04_SAVE
+		   , A.FILE04_ORG 
+		   , A.SDATE 
+		   , A.EDATE  
+		   , A.EVAL
+		   , A.OPENYN 
+		   , A.RESULTYN
+		   , NVL( (SELECT  VAL   FROM TB_LE_REPORT_APPLY WHERE REPORTNO = A.REPORTNO AND CUSERNO = #{SES_CUSERNO}), 0)    VAL
+		    , (SELECT COUNT(1) FROM TB_LE_REPORT_APPLY WHERE REPORTNO = A.REPORTNO AND OPENYN = 'Y') AS SCNT 
+		    , (SELECT COUNT(1) FROM TB_LE_COURSE_USER WHERE CSEQNO = A.CSEQNO) AS TOTCNT 
+		   , CASE
+                WHEN TO_CHAR(EDATE,'YYYYMMDD')  <![CDATA[<]]> TO_CHAR(SYSDATE,'YYYYMMDD') THEN 'Y' 
+                ELSE 'N'
+             END AS ENDYN   
+             		
+     <!--     <if test="SES_GRADENO != null and SES_GRADENO != ''"> 사용자 일 경우 필요한 컬럼
+			 <if test="SES_GRADENO == '1'">-->
+				, (SELECT CUSERNO AS CUSERNO FROM TB_LE_REPORT_APPLY WHERE REPORTNO = A.REPORTNO AND CUSERNO = #{SES_CUSERNO}) AS CUSERNO
+				, (SELECT WDATE FROM TB_LE_REPORT_APPLY WHERE REPORTNO = A.REPORTNO AND CUSERNO = #{SES_CUSERNO}) AS WDATE
+				, (SELECT OPENYN AS USER_OPENYN FROM TB_LE_REPORT_APPLY WHERE REPORTNO = A.REPORTNO AND CUSERNO = #{SES_CUSERNO}) AS USER_OPENYN
+				, CASE 
+			        WHEN TO_CHAR(SDATE,'YYYYMMDD')  <![CDATA[<=]]>   TO_CHAR(SYSDATE,'YYYYMMDD') 
+			        	AND TO_CHAR(EDATE,'YYYYMMDD')  <![CDATA[>=]]> TO_CHAR(SYSDATE,'YYYYMMDD') THEN 'Y' <!-- 과제 제출기간내에 등록가능 유무 -->
+			        ELSE 'N'
+			      END AS SAVEYN 
+		<!-- 	</if>
+		</if>   -->
+	</sql>
+
+	<!-- 과제 목록 -->
+	<select id="getUserReportList" resultType="emap" parameterType="dmap">
+		SELECT 
+			<include refid="selectItem_fragment"/>
+			<!-- ,ROW_NUMBER() OVER (ORDER BY A.REPORTNO ASC) RNUM -->
+			, ROWNUM AS RNUM
+		FROM TB_LE_REPORT A
+		WHERE CSEQNO = #{SES_CSEQNO}
+		AND OPENYN = 'Y'
+		AND TO_CHAR(SDATE,'YYYYMMDD')  <![CDATA[<=]]> TO_CHAR(SYSDATE,'YYYYMMDD')	
+        ORDER BY REPORTNO DESC
+	</select>
+
+
+	<!--  과제 제출 등록(임시/완료)  -->
+	<insert id="insertReportApply" parameterType="dmap">
+		INSERT INTO TB_LE_REPORT_APPLY (REPORTNO, CUSERNO, TITLE, SUMMARY, FILE_PATH, FILE01_ORG, FILE01_SAVE, FILE02_ORG, FILE02_SAVE, FILE03_ORG, FILE03_SAVE, FILE04_ORG, FILE04_SAVE 
+									, OPENYN
+								<if test='openYn == "Y"'> <!-- 사용자 일 경우 필요한 컬럼 -->
+									, WDATE
+								</if>
+									, CSEQNO
+									, USERNO )
+		VALUES ( 
+				#{reportNo}
+				, #{SES_CUSERNO} 
+				, #{title}
+				, #{summary}
+				, #{filePath}
+				, #{file01Org}
+				, #{file01Save}
+				, #{file02Org}
+				, #{file02Save}
+				, #{file03Org}
+				, #{file03Save}
+				, #{file04Org}
+				, #{file04Save}
+				, #{openYn}
+			<if test='openYn == "Y"'> <!-- 사용자 일 경우 필요한 컬럼 -->
+				, SYSDATE
+			</if>
+				, #{SES_CSEQNO}
+				, #{SES_USERNO}
+				)
+
+		</insert>
+
+	<!--  과제 제출 수정(임시/완료) -->
+	<update id="updateReportApply" parameterType="dmap">
+		UPDATE TB_LE_REPORT_APPLY
+		SET      TITLE    		= #{title}
+		       , SUMMARY  		= #{summary}
+		       , FILE_PATH  	= #{filePath}
+		       , FILE01_ORG  	= #{file01Org}
+		       , FILE01_SAVE  	= #{file01Save}
+		       , FILE02_ORG   	= #{file02Org}
+		       , FILE02_SAVE  	= #{file02Save}
+		       , FILE03_ORG   	= #{file03Org}
+		       , FILE03_SAVE 	= #{file03Save}
+		       , FILE04_ORG   	= #{file04Org}
+		       , FILE04_SAVE  	= #{file04Save}
+		       , OPENYN  		= #{openYn}
+		    <if test='openYn == "Y"'> <!-- 사용자 일 경우 필요한 컬럼 -->
+			   , WDATE          = SYSDATE
+			</if> 
+		WHERE  REPORTNO = #{reportNo}
+		AND    CUSERNO = #{cUserNo}
+	</update>
+
+</mapper>

@@ -1,0 +1,15 @@
+eclipse.preferences.version=1
+encoding//src/main/java=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/admin/testView.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/mngr/popupMng/popup_mng_form.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/mobile/bbs/notice_view.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/mobile/bbs/photo_list.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/mobile/bbs/photo_view.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/mobile/bbs/qna_form.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/mobile/bbs/qna_list.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/mobile/bbs/qna_view.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/mobile/info/info.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/mobile/login/login.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/mobile/survey/survey_list.jsp=UTF-8
+encoding//src/main/webapp/WEB-INF/jsp/mobile/survey/survey_view.jsp=UTF-8
+encoding//src/test/java=UTF-8

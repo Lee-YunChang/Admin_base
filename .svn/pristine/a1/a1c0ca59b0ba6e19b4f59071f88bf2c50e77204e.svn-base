@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 클래스데스크 > 강사 > 시험 > 문제은행관련 -->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskTutorExamQuizbankMapper">
+
+	<sql id="selectItem_fragment">
+		   A.QNO
+		   , A.QTYPE
+		   , A.FILE_PATH
+		   , A.QSUBJECT
+		   , A.QSUBJECT_FILE
+		   , A.A01
+		   , A.A01_FILE
+		   , A.A02
+		   , A.A02_FILE
+		   , A.A03
+		   , A.A03_FILE
+		   , A.A04
+		   , A.A04_FILE
+		   , A.A05
+		   , A.A05_FILE
+		   , A.RCODE
+		   , A.SUMMARY
+		   , A.WDATE
+		   , A.WRITER
+		   , A.USEYN
+		   , A.COURSENO
+		   , A.SECNO
+		   , A.RTEXT
+		   , (SELECT SECTITLE FROM TB_ED_EXAM_SECTION WHERE SECNO = A.SECNO AND COURSENO = #{SES_COURSENO}) SECTITLE  
+		   , ROW_NUMBER() OVER (ORDER BY QNO ASC) RNUM
+	</sql>
+	
+	
+	<select id="getEdExamQuizList" parameterType="dmap" resultType="emap" >
+		/* getEdExamQuizList */
+		SELECT 
+			 <include refid="selectItem_fragment"/>
+		FROM TB_ED_EXAM_QUIZ A
+		WHERE COURSENO = #{SES_COURSENO}
+		<if test="secNo != null and secNo != ''">
+			  AND SECNO = #{secNo}		
+		</if>
+		<if test="searchSecno != null and searchSecno != ''">
+			  AND SECNO = #{searchSecno}		
+		</if>
+		<if test="searchQtype != null and searchQtype != ''">
+			  AND QTYPE = #{searchQtype}	
+		</if>
+		<if test="qsubject != null and qsubject != ''">  AND A.QSUBJECT LIKE '%'|| #{qsubject}||'%' </if>
+		ORDER BY QNO DESC
+	</select>
+	
+	<select id="getLeExamQuizList" parameterType="dmap" resultType="emap" >
+		/* getLeExamQuizList */
+		SELECT 
+			 <include refid="selectItem_fragment"/>
+		FROM TB_LE_EXAM_QUIZ A
+		WHERE COURSENO = #{SES_COURSENO}
+		AND EXAMNO = #{examNo}
+		<if test="secNo != null and secNo != ''">
+			  AND SECNO = #{secNo}		
+		</if>
+		<if test="searchSecno != null and searchSecno != ''">
+			  AND SECNO = #{searchSecno}		
+		</if>
+		<if test="searchQtype != null and searchQtype != ''">
+			  AND QTYPE = #{searchQtype}	
+		</if>
+		<if test="qsubject != null and qsubject != ''">  AND A.QSUBJECT LIKE '%'|| #{qsubject}||'%' </if>
+		ORDER BY QNO DESC
+	</select>
+	
+	<select id="getEdExamQuizInfo" parameterType="dmap" resultType="emap" >
+		SELECT 
+			<include refid="selectItem_fragment"/> 
+		FROM TB_ED_EXAM_QUIZ A
+		WHERE COURSENO = #{SES_COURSENO}
+		AND   QNO = #{qNo}
+	</select>
+	
+	<select id="getLeExamQuizInfo" parameterType="dmap" resultType="emap" >
+		SELECT 
+			<include refid="selectItem_fragment"/> 
+		FROM TB_LE_EXAM_QUIZ A
+		WHERE COURSENO = #{SES_COURSENO}
+		AND EXAMNO = #{examNo}
+		AND   QNO = #{qNo}
+	</select>
+	
+	
+	<!-- 문제 삭제 -->
+	<delete id="deletetEdExamQuiz" parameterType="dmap">
+		DELETE FROM TB_ED_EXAM_QUIZ
+		WHERE QNO = #{qNo}
+	</delete>
+	
+	<!-- 문제 삭제 -->
+	<delete id="deletetLeExamQuiz" parameterType="dmap">
+		DELETE FROM TB_LE_EXAM_QUIZ
+		WHERE QNO = #{qNo}
+		AND EXAMNO = #{examNo}
+	</delete>
+	
+	
+	<update id="updateEdExamQuiz" parameterType="dmap"> 
+		UPDATE TB_ED_EXAM_QUIZ SET 
+			QTYPE = #{qtype}
+			, FILE_PATH = #{file_path}
+			, QSUBJECT = #{qsubject}
+			, QSUBJECT_FILE = #{qsubjectFile}
+			,A01 = #{a01}
+			, A01_FILE = #{a01File}
+			, A02 = #{a02}
+			, A02_FILE = #{a02File}
+			, A03 = #{a03}
+			, A03_FILE = #{a03File}
+			, A04 = #{a04}
+			, A04_FILE = #{a04File}
+			, A05 = #{a05}
+			, A05_FILE = #{a05File}
+			, RCODE = #{rcode}
+			, SUMMARY = #{summary}
+			, WDATE = SYSDATE
+			, WRITER = #{writer}
+			, USEYN = #{useyn}
+			, RTEXT = #{rtext}
+		WHERE QNO = #{qNo}
+	</update>
+	
+	<update id="updateLeExamQuiz" parameterType="dmap"> 
+		UPDATE TB_LE_EXAM_QUIZ SET 
+			QTYPE = #{qtype}
+			, FILE_PATH = #{file_path}
+			, QSUBJECT = #{qsubject}
+			, QSUBJECT_FILE = #{qsubjectFile}
+			,A01 = #{a01}
+			, A01_FILE = #{a01File}
+			, A02 = #{a02}
+			, A02_FILE = #{a02File}
+			, A03 = #{a03}
+			, A03_FILE = #{a03File}
+			, A04 = #{a04}
+			, A04_FILE = #{a04File}
+			, A05 = #{a05}
+			, A05_FILE = #{a05File}
+			, RCODE = #{rcode}
+			, SUMMARY = #{summary}
+			, WDATE = SYSDATE
+			, WRITER = #{writer}
+			, USEYN = #{useyn}
+			, RTEXT = #{rtext}
+		WHERE QNO = #{qNo}
+		AND EXAMNO = #{examNo}
+		AND COURSENO = #{SES_COURSENO}
+	</update>
+	
+	 <insert id="insertEdExamQuiz" parameterType="dmap" >
+		 INSERT INTO TB_ED_EXAM_QUIZ 
+	( 
+		QNO
+		, QTYPE
+		, FILE_PATH
+		, QSUBJECT
+		, QSUBJECT_FILE
+		, A01
+		, A01_FILE
+		, A02
+		, A02_FILE
+		, A03
+		, A03_FILE
+		, A04
+		, A04_FILE
+		, A05
+		, A05_FILE
+		, RCODE
+		, SUMMARY
+		, WDATE
+		, WRITER
+		, USEYN
+		, COURSENO
+		, SECNO
+		, RTEXT
+	)
+	VALUES (
+		 (SELECT NVL(MAX(QNO)+1, 1) FROM TB_ED_EXAM_QUIZ)
+		, #{qtype}
+		, #{file_path}
+		, #{qsubject}
+		, #{qsubjectFile}
+		, #{a01}
+		, #{a01File}
+		, #{a02}
+		, #{a02File}
+		, #{a03}
+		, #{a03File}
+		, #{a04}
+		, #{a04File}
+		, #{a05}
+		, #{a05File} 
+		, #{rcode}
+		, #{summary}
+		, SYSDATE
+		, #{writer}
+		, #{useyn}
+		, #{SES_COURSENO}
+		, #{secNo}
+		, #{rtext}
+	)
+	</insert>
+	
+	<insert id="insertLeExamQuiz" parameterType="dmap" >
+		 INSERT INTO TB_LE_EXAM_QUIZ 
+	( 
+		EXAMNO
+		, SEQ
+		, QNO
+		, QTYPE
+		, FILE_PATH
+		, QSUBJECT
+		, QSUBJECT_FILE
+		, A01
+		, A01_FILE
+		, A02
+		, A02_FILE
+		, A03
+		, A03_FILE
+		, A04
+		, A04_FILE
+		, A05
+		, A05_FILE
+		, RCODE
+		, SUMMARY
+		, WDATE
+		, WRITER
+		, USEYN
+		, COURSENO
+		, SECNO
+		, RTEXT
+	)
+	VALUES (
+		#{examNo}
+		, (SELECT NVL(MAX(SEQ)+1, 1) FROM TB_LE_EXAM_QUIZ WHERE EXAMNO = #{examNo})
+		, (SELECT NVL(MAX(QNO)+1, 1) FROM TB_LE_EXAM_QUIZ WHERE EXAMNO = #{examNo})
+		, #{qtype}
+		, #{file_path}
+		, #{qsubject}
+		, #{qsubjectFile}
+		, #{a01}
+		, #{a01File}
+		, #{a02}
+		, #{a02File}
+		, #{a03}
+		, #{a03File}
+		, #{a04}
+		, #{a04File}
+		, #{a05}
+		, #{a05File} 
+		, #{rcode}
+		, #{summary}
+		, SYSDATE
+		, #{writer}
+		, #{useyn}
+		, #{SES_COURSENO}
+		, #{secNo}
+		, #{rtext}
+	)
+	</insert>
+	
+	<update id="updateLeExamQuizTotalQnum" parameterType="dmap"> 
+		UPDATE TB_LE_EXAM_SECTION SET 
+			TOTALQNUM = (SELECT NVL(MAX(TOTALQNUM),0)+1 FROM TB_LE_EXAM_SECTION WHERE EXAMNO=#{examNo})
+		WHERE EXAMNO=#{examNo}
+	</update>
+</mapper>
+

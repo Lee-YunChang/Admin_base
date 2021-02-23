@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 진도처리관련-->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskProgMapper">
+	
+	<select id="getEdCourseTreeInfo" parameterType="dmap" resultType="emap">
+         SELECT 
+		    TREENO, COURSENO, SDAY, SUBJECT, FRAMECNT, RUNTIME, FILE_PATH, TREE_FILE_PATH, START_FILE
+		FROM   TB_ED_COURSE_TREE
+		WHERE TREENO= #{treeno}
+	</select>
+	
+	<select id="getLeCourseTreeHistInfo" parameterType="dmap" resultType="emap">
+       SELECT
+		    TREENO, CUSERNO, FRAMESEQ, STUDYTIME, VAL, SDATE, EDATE, STUDYCNT, MOVSEC, MT_PROG_STATUS_CODE, COMP_DATE
+		FROM    TB_LE_TREE_HIST 
+		WHERE  TREENO= #{treeno}
+		AND  CUSERNO = #{cuserNo}
+	</select>
+	
+	<!-- 현재까지 학습한 페이지 (FRAMESEQ) -->
+	<select id="getFrameseqInfo" parameterType="dmap"  resultType="int"> 
+		 SELECT COUNT(*)CNT FROM TB_LE_TREE_HIST WHERE CUSERNO =  #{cuserNo}  AND      TREENO = #{treeno}
+	</select>
+	
+	<!-- 최초 학습 정보 저장 -->	
+	<insert id="insertLeCourseTreeHist" parameterType="dmap">
+		INSERT INTO TB_LE_TREE_HIST (
+		    CUSERNO, TREENO, FRAMESEQ,  SDATE, EDATE,  MT_PROG_STATUS_CODE, MOVSEC 
+		)VALUES (
+			#{cuserNo} , #{treeno}, #{frameseq} , SYSDATE, SYSDATE, #{mtProgStatusCode}, #{movsec}
+		)
+	</insert>
+	
+	<!-- 학습정보 저장3 -->
+	 <update id="updateLeCourseTreeHist" parameterType="dmap">
+		UPDATE TB_LE_TREE_HIST	SET 
+			FRAMESEQ = #{frameseq}, EDATE = SYSDATE, MT_PROG_STATUS_CODE = #{mtProgStatusCode}, MOVSEC = #{movsec}
+			<if test="compYn != null and compYn != ''"> , COMP_DATE = SYSDATE </if>
+		WHERE CUSERNO = #{cuserNo}
+		AND TREENO = #{treeno}
+	</update>
+	
+	<select id="getEduseqYnInfo" parameterType="dmap" resultType="emap"> 
+         SELECT 
+         	A.CONURL, B.*  , C.* FROM 
+		(SELECT CONURL FROM TB_ED_COURSE   WHERE COURSENO =   #{courseno}         ) A,
+   		(SELECT  EDUSEQ_YN, NVL(OPENTYPE, 'D')OPENTYPE, EXAM_PROG_PERCENT ,  REVIEWDAY FROM TB_ED_COURSE_SEQ WHERE CSEQNO =  #{cseqno}    )B,
+   		(SELECT 
+		        CASE       
+		                WHEN TO_CHAR(STARTDATE,'YYYYMMDD') <![CDATA[<=]]>  TO_CHAR(SYSDATE,'YYYYMMDD') 		   
+		                 AND TO_CHAR(ENDDATE,'YYYYMMDD') <![CDATA[>=]]>   TO_CHAR(SYSDATE,'YYYYMMDD') 
+		       THEN 'Y'  
+		       ELSE 'N'  
+		       END     AS STUDY_YN,
+		       
+		       CASE                                      
+		                WHEN TO_CHAR(ENDDATE ,'YYYYMMDD') <![CDATA[< ]]>     TO_CHAR(SYSDATE,'YYYYMMDD')  
+		                AND TO_CHAR(ENDDATE+ (SELECT REVIEWDAY  FROM TB_ED_COURSE_SEQ WHERE CSEQNO = #{cseqno}  ) ,'YYYYMMDD') <![CDATA[>=]]>    TO_CHAR(SYSDATE,'YYYYMMDD') 
+		       THEN 'Y'  
+		       ELSE 'N'  
+		       END     AS RE_STUDY_YN 
+		       , COMPCODE
+		       , CASE WHEN PROGRESS_VAL = 100
+               THEN 'Y'
+               ELSE 'N'
+               END AS END_PROGRESS  
+       FROM TB_LE_COURSE_USER WHERE CUSERNO =     #{cuserNo} ) C
+	</select> 
+	
+	<!-- 성적 산출을 위한 정보 -->
+	<select id="getResultInfo" parameterType="dmap" resultType="emap">
+	SELECT * FROM 
+		(SELECT EVAL_PROGRESS FROM   TB_ED_COURSE_SEQ      WHERE CSEQNO = #{cseqno}) A, 
+		(SELECT SUM(FRAMECNT) TOT_FRAMECNT FROM TB_ED_COURSE_TREE     WHERE COURSENO = #{courseno})B, 
+		(SELECT SUM(FRAMESEQ) TOT_FRAMESEQ FROM TB_LE_TREE_HIST WHERE CUSERNO  = #{cuserNo})C,
+		(SELECT RUNTIME FROM TB_ED_COURSE_TREE WHERE COURSENO  = #{courseno} AND TREENO = #{treeno})D,
+        (SELECT MOVSEC FROM TB_LE_TREE_HIST WHERE CUSERNO  = #{cuserNo} AND TREENO = #{treeno})E         
+	</select>
+	
+	<!-- 업데이트 성적 -->
+	<update id="updateEvalProg" parameterType="dmap"> 
+		UPDATE TB_LE_COURSE_USER 
+		SET PROGRESS_VAL = #{progVal}
+		<if test="OPENTYPE != null and OPENTYPE != ''">
+			<if test="progVal == 100">
+			, FINAL_VAL = #{progVal}
+			, ISPASS = 'Y'
+			</if>
+		</if>
+		
+		 WHERE CUSERNO = #{cuserNo}
+ 	</update>
+	
+</mapper>

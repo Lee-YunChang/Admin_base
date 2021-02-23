@@ -1,0 +1,84 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>TOPAS 안내 메일</title>
+<link rel="stylesheet" type="text/css" href="http://devedu-1.topasweb.com/common/mail/css/mail.css" />
+</head>
+<body>
+<div id="mail_wrap">
+	<div id="mail_header">
+		<h1><img src="http://devedu-1.topasweb.com/common/mail/images/logo.png" alt="TOPAS" /></h1>
+		<h2>
+			<strong>[TOPAS 아카데미] 전문가과정 서류전형 합격안내</strong><br />
+			현장의 생생한 실무교육! 토파스 사이버 아카데미가 함께 합니다.
+		</h2>
+	</div>
+	<div id="mail_body">
+		<p class="message">토파스 아카데미 <span class="accent">전문가 과정</span> 서류전형에 합격하셨습니다.</p>
+		<div class="mail_table">
+			<div class="tit">신청정보</div>
+			<table class="table_row table_blue">
+				<colgroup>
+					<col width="120" />
+					<col width="" />
+				</colgroup>
+				<tbody>
+					<tr>
+						<th>과정명</th>
+						<td>25기 전문가과정(과목명 4개)</td>
+					</tr>
+					<tr>
+						<th>신청일</th>
+						<td>2013-09-09</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="mail_table" style="margin-top:20px;">
+			<div class="tit">면접안내</div>
+			<table class="table_row table_blue">
+				<colgroup>
+					<col width="120" />
+					<col width="" />
+				</colgroup>
+				<tbody>
+					<tr>
+						<th>면접일</th>
+						<td>9/16(월) 14:00</td>
+					</tr>
+					<tr>
+						<th>장소</th>
+						<td>부산 중구 중앙동 4가 77-1번지 대한항공 빌딩 5층 토파스</td>
+					</tr>
+					<tr>
+						<th>문의</th>
+						<td>051-441-3430 이수련 / <a href="mailto:sylee@topas.net" class="txt_link">sylee@topas.net</a></td>
+					</tr>
+					<tr>
+						<th>문의</th>
+						<td>취업을 위한 기본 소양과 지원 동기 등을 간단히 인터뷰하는 자리이오니, 큰 부담없이 단정한 복장으로 참석해 주시기 바랍니다.</td>
+					</tr>
+					<tr>
+						<th>예상소요시간</th>
+						<td>3~4명 내외 단체 면접 형식으로 진행되며 예상 소요시간은 약 10분 전후입니다.</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="mail_txt" style="margin-top:20px;">
+			<p>
+			※ 면접일과 시간 변경이 필요하신 분들은 사전에 연락주시면 최대한 조정해 드리겠습니다. 감사합니다.
+			</p>
+		</div>
+	</div>
+	<div id="mail_footer">
+		<p class="alert">본 메일은 발신전용이므로 회신하실 경우 답변되지 않습니다.</p>
+		<p class="address">
+		서울시 중구 소공 51번지 한진빌딩 신관 19층 대표전화 : 1566-0014<br />
+		Copyright (c) TOPAS All RIghts Reserved.
+		</p>
+	</div>
+</div>
+</body>
+</html>

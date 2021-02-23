@@ -1,0 +1,37 @@
+@charset "utf-8";
+/* CSS Document */
+
+html, body, div, p, form, table, th, td, h1, h2, h3 {margin:0;padding:0;}
+body {font-size:13px/100%;font-family:Malgun Gothic, Dotum, Arial, sans-serif;line-height:120%;}
+table {border-collapse:separate;border-spacing:0;	}
+img {vertical-align:middle;border:0;}
+#mail_wrap {width:720px;border:5px solid #6db3e6;}
+#mail_header {padding:20px;background-color:#f2f2f2;border-bottom:1px solid #dfdfdf;position:relative;overflow:hidden;}
+#mail_header h1 {float:left;	}
+#mail_header h2 {float:right;font-size:12px;font-family:dotum, arial, sans-serif;font-weight:normal;text-align:right;color:#333;}
+#mail_header h2 strong {color:#4b97ae !important;}
+#mail_body {padding:20px;}
+#mail_body .message {text-align:center;font-size:24px;font-weight:600;letter-spacing:-0.05em;color:#333;line-height:100%;margin-bottom:20px;padding-bottom:20px;border-bottom:2px solid #6db3e6;}
+#mail_body .message .accent {color:#df7539 !important;}
+#mail_body .txt_field {font-size:13px;padding:12px 15px;border:1px solid #dfdfdf;font-weight:bold;color:#4c4c4c;}
+#mail_body .txt_field .accent {color:#3e8dc6 !important;}
+#mail_body .btn_group {text-align:center;margin-top:20px;}
+#mail_footer {padding:0 20px 20px 20px;}
+#mail_footer .alert {background:url('http://devedu-1.topasweb.com/common/mail/images/ico_alert.png') 15px 10px no-repeat;height:40px;line-height:40px;color:#333;font-family:dotum, arial, sans-serif;padding-left:40px;background-color:#f2f2f2;border:1px solid #dfdfdf;font-size:12px;}
+#mail_footer .address {background:url('http://devedu-1.topasweb.com/common/mail/images/logo_gray.png') 0 50% no-repeat;color:#999;font-size:12px;padding-left:105px;font-family:dotum, arial, sans-serif;margin-top:15px;line-height:120%;}
+
+.tit {background:url('http://devedu-1.topasweb.com/common/mail/images/bu_tit1.gif') no-repeat;padding-left:25px;height:16px;font-size:14px;font-weight:bold;line-height:16px;margin-bottom:15px;}
+.mail_table {}
+.mail_table table {width:100%;border-collapse:separate;border-spacing:0;font-size:12px;}
+.mail_table th {padding:7px 10px;	text-align:center;font-weight:bold;}
+.mail_table td {min-height:25px;padding:6px 10px;text-align:center;line-height:150%;color:#707070;}
+.mail_table .cell_first {border-left:0 !important;}
+.mail_table .table_row th {border-top:1px solid #fff;}
+.mail_table .table_row td {border-top:1px solid #dfdfdf;text-align:left;}
+.mail_table .table_row tr:first-child th {border-top:0 !important;}
+.mail_table .table_row tr:first-child td {border-top:0 !important;}
+.mail_table .table_blue {border-top:1px solid #519ed5;border-bottom:1px solid #519ed5;}
+.mail_table .table_blue th {background-color:#c9ddea;color:#1567a6;}
+.mail_txt p {font-size:12px;}
+
+.txt_link {text-decoration:underline;color:#519ed5;}

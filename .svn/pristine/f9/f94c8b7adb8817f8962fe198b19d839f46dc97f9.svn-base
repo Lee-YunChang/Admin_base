@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.webapp.admin.mapper.AdminTutorCmmntyMapper">
+
+	<resultMap id="clobMap" type="emap">
+		<result property="bbsNo" column="BBSNO"/>
+		<result property="bbsName" column="BBS_NAME"/>
+		<result property="bbsAnswerAt" column="BBS_ANSWER_AT"/>
+		<result property="bbsNoticeAt" column="BBS_NOTICE_AT"/>
+		<result property="useAt" column="USE_AT"/>
+		<result property="registId" column="REGIST_ID"/>
+		<result property="registNm" column="REGIST_NM"/>
+		<result property="registDate" column="REGIST_DATE"/>
+		<result property="toCnt" column="TOCNT"/>
+		<result property="bbsNoticeAt" column="BBS_NOTICE_AT"/>
+        <result property="bbsDesc" column="BBS_DESC" jdbcType="CLOB" javaType="java.lang.String"/>
+        <result property="CONTENT" column="CONTENT" jdbcType="CLOB" javaType="java.lang.String"/>
+    </resultMap>
+	
+	<!-- 대분류 목록조회 -->
+	<select id="getCmmntyList" parameterType="dmap" resultMap="clobMap">
+		SELECT A.*
+		FROM(	
+			SELECT ROWNUM AS  RNUM	 	
+				, BBSNO
+				, BBS_NAME
+				, BBS_ANSWER_AT
+				, BBS_NOTICE_AT
+				, BBS_DESC
+				, USE_AT
+				, REGIST_ID
+				, TO_CHAR(REGIST_DATE , 'YYYY-MM-DD HH24:MI:SS') AS REGIST_DATE
+			FROM TB_TT_BBS_MANAGE
+			WHERE 1=1 
+			<choose>
+				<when test=" useYn != null and useYn != '' ">
+					AND USE_AT = #{useYn}
+				</when>
+			</choose>
+			<if test=" searchWord != null and searchWord != ''">  
+				<if test=" searchMode == 'bName' ">
+					AND BBS_NAME LIKE '%'||#{searchWord}||'%'
+				</if>
+				<if test=" searchMode == 'regiId' ">
+					AND REGIST_ID LIKE '%'||#{searchWord}||'%'
+				</if>
+			</if>
+			ORDER BY BBSNO DESC
+			)A
+		WHERE RNUM BETWEEN  #{startNo} AND #{endNo}
+	</select>
+	
+	<!-- 대분류 상세보기 -->
+	<select id="getCmmntyDetailInfo" parameterType="dmap" resultMap="clobMap">
+		SELECT BBSNO
+			, BBS_NAME
+			, BBS_DESC
+			, REGIST_ID
+			, BBS_NOTICE_AT
+			, BBS_ANSWER_AT
+			, USE_AT
+			, TO_CHAR(REGIST_DATE , 'YYYY-MM-DD HH24:MI:SS') AS REGIST_DATE
+		FROM TB_TT_BBS_MANAGE
+		WHERE BBSNO = #{bbsNo}
+	</select>
+	
+	
+	<!-- 소분류 게시판 카운트  -->	
+	<select id="getCmmntyListCount" parameterType="dmap" resultType="int" >
+		SELECT COUNT(*) AS TOTALCOUNT 
+		FROM TB_TT_BBS_MANAGE 
+		WHERE 1=1 
+		<choose>
+			<when test=" useYn != null and useYn != '' ">
+				AND USE_AT = #{useYn}
+			</when>
+		</choose>
+		<if test=" searchWord != null and searchWord != ''">  
+			<if test=" searchMode == 'bName' ">
+				AND BBS_NAME LIKE '%'||#{searchWord}||'%'
+			</if>
+			<if test=" searchMode == 'regiId' ">
+				AND REGIST_ID LIKE '%'||#{searchWord}||'%'
+			</if>
+		</if>
+	</select>
+	
+	<!-- 소분류 목록조회 -->
+	<select id="getCmmntySubList"  parameterType="dmap" resultType="emap">
+		SELECT A.*
+		FROM (
+			SELECT  ROWNUM AS RNUM
+				, A.*
+			FROM 
+				(
+				 SELECT A.*
+				 FROM	
+					(
+					 SELECT NTTNO
+						, BBSNO
+						, NTT_DEPTH
+						, PBBSNO
+						, TITLE
+						, RCNT
+						, REGIST_ID
+						, REGIST_NM
+						, NVL(NOTICE_AT , 'N')AS NOTICE_AT
+						, USE_AT
+						, TO_CHAR(REGIST_DATE , 'YYYY-MM-DD HH24:MI:SS') AS REGIST_DATE
+						, TO_CHAR(REGIST_DATE , 'YYYY-MM-DD') AS REGIST_DATE2
+						, ROUND(SYSDATE - REGIST_DATE) AS DATE_DIFF 
+					 FROM TB_TT_BBS_NTT
+					 WHERE BBSNO = #{bbsNo}
+					 
+					 ORDER BY NOTICE_AT DESC , REGIST_DATE DESC 
+					 )A
+					 START WITH PBBSNO IS NULL
+					 CONNECT BY PRIOR NTTNO = PBBSNO
+					 ORDER SIBLINGS BY NOTICE_AT DESC
+				 )A
+				 WHERE 1=1
+				 <if test="sdate != null and sdate != '' and edate != null and edate != '' ">
+				 	AND REGIST_DATE2 BETWEEN  #{sdate} AND TO_DATE(#{edate} , 'YYYY-MM-DD')+1
+				 </if>
+				 <if test= " searchWord != null and searchWord != '' ">
+				 	<if test= " searchMode == 'bName' ">
+				 		AND REGIST_NM LIKE '%'||#{searchWord}||'%'
+				 	</if>
+				 	<if test=" searchMode == 'title' ">
+						AND TITLE LIKE '%'||#{searchWord}||'%'
+					</if>
+				 </if>
+			 )A
+		WHERE A.RNUM BETWEEN #{startNo} AND #{endNo}
+		
+	</select>
+	
+	<!-- 소분류 TOP목록조회 -->
+	<select id="getCmmntySubTopList"  parameterType="dmap" resultType="emap">
+		SELECT A.*
+		FROM 
+			(
+			 SELECT ROWNUM AS RNUM
+				, A.*
+			 FROM	
+				(
+				 SELECT NTTNO
+					, BBSNO
+					, NTT_DEPTH
+					, PBBSNO
+					, TITLE
+					, RCNT
+					, REGIST_ID
+					, NOTICE_AT
+					, USE_AT
+					, TO_CHAR(REGIST_DATE , 'YYYY-MM-DD HH24:MI:SS') AS REGIST_DATE
+				 FROM TB_TT_BBS_NTT
+				 WHERE BBSNO = #{bbsNo}
+				 AND NOTICE_AT = 'Y'
+				 <if test="sdate != null and sdate != '' and edate != null and edate != '' ">
+				 	AND TO_CHAR(REGIST_DATE , 'YYYY-MM-DD') BETWEEN  #{sdate} AND #{edate}
+				 </if>
+				 <if test= " searchWord != null and searchWord != '' ">
+				 	<if test= " searchMode == 'bName' ">
+				 		AND REGIST_ID LIKE '%'||#{searchWord}||'%'
+				 	</if>
+				 	<if test=" searchMode == 'title' ">
+						AND TITLE LIKE '%'||#{searchWord}||'%'
+					</if>
+				 </if>
+				 START WITH PBBSNO IS NULL
+				 CONNECT BY PRIOR NTTNO = PBBSNO
+				 )A
+			 )A
+		WHERE A.RNUM BETWEEN #{startNo} AND #{endNo}
+		
+	</select>
+	
+	
+	<!-- 소분류 상세보기 -->
+	<select id="getCmmntyDetailSubInfo" parameterType="dmap" resultMap="clobMap">
+		SELECT NTTNO
+			, BBSNO
+			, NTT_DEPTH
+			, TITLE
+			, RCNT
+			, REGIST_ID
+			, REGIST_DATE
+			, USE_AT
+			, NOTICE_AT
+			, CONTENT
+		FROM TB_TT_BBS_NTT
+		WHERE NTTNO = #{nttNo}
+	</select>
+	
+	<!-- 소분류 수정 폼 -->
+	<select id="updateCmmntySubForm" parameterType="dmap" resultMap="clobMap">
+		SELECT NTTNO
+			, BBSNO
+			, NTT_DEPTH
+			, TITLE
+			, RCNT
+			, REGIST_ID
+			, REGIST_DATE
+			, USE_AT
+			, NOTICE_AT
+			, CONTENT
+		FROM TB_TT_BBS_NTT
+		WHERE NTTNO = #{nttNo}
+		AND BBSNO = #{bbsNo}
+	</select>
+	
+	<!-- 소분류 게시판 카운트  -->	
+	<select id="getCmmntySubListCount" parameterType="dmap" resultType="int" >
+		SELECT COUNT(*) AS totalCount 
+		FROM TB_TT_BBS_NTT 
+		WHERE BBSNO = #{bbsNo}
+		<if test= " searchWord != null and searchWord != '' ">
+		 	AND TO_CHAR(REGIST_DATE , 'YYYY-MM-DD') BETWEEN  #{sdate} AND TO_DATE(#{edate} , 'YYYY-MM-DD')+1
+		 	<if test= " searchMode == 'bName' ">
+		 		AND REGIST_NM LIKE '%'||#{searchWord}||'%'
+		 	</if>
+		 	<if test=" searchMode == 'title' ">
+				AND TITLE LIKE '%'||#{searchWord}||'%'
+			</if>
+		</if>
+	</select>
+	
+	<!-- 대분류 등록 -->
+	<insert id="insertCmmntyInfo" parameterType="dmap">
+		INSERT INTO TB_TT_BBS_MANAGE(
+			 BBSNO
+			, BBS_NAME
+			, BBS_NOTICE_AT
+			, BBS_ANSWER_AT
+			, BBS_DESC
+			, USE_AT
+			, REGIST_ID
+			, REGIST_DATE
+			)
+		VALUES (
+			(SELECT NVL(MAX(BBSNO),0)+1 FROM TB_TT_BBS_MANAGE)
+			, #{bbsName}
+			, #{noticeYn}
+			, #{answerAt}
+			, #{bbsDesc}
+			, #{useYn}
+			, #{registId}
+			, SYSDATE
+			)
+	</insert>
+	
+	
+	<!-- 대분류 수정 -->
+	<update id="updateCmmntyInfo" parameterType="dmap">
+		UPDATE TB_TT_BBS_MANAGE SET
+			BBS_NAME = #{bbsName} 
+			, REGIST_ID = #{registId}
+			, USE_AT = #{useYn}
+			, BBS_ANSWER_AT = #{answerAt}
+			, BBS_NOTICE_AT = #{noticeYn}
+			, BBS_DESC = #{bbsDesc}
+		WHERE BBSNO = #{bbsNo}	
+	</update>
+
+	<!-- 소분류 등록 -->
+	<insert id="insertCmmntySubInfo" parameterType="dmap">
+		INSERT INTO TB_TT_BBS_NTT(
+			NTTNO
+			, BBSNO
+			, NTT_DEPTH
+			, TITLE
+			, CONTENT
+			, NOTICE_AT
+			, USE_AT
+			, REGIST_ID
+			, REGIST_NM
+			, REGIST_DATE
+			, RCNT
+			)
+			VALUES (
+			 (SELECT NVL(MAX(NTTNO),0)+1 FROM TB_TT_BBS_NTT)
+			 , #{bbsNo}
+			 , 1
+			 , #{title}
+			 , #{content}
+			 , #{noticeYn}
+			 , #{useYn}
+			 , #{SES_USERID}
+			 , #{SES_USERNAME}
+			 , SYSDATE
+			 , 0
+			)
+	</insert>
+	
+	<select id="getNewNttNo" parameterType="dmap" resultType="String">
+		SELECT MAX(NTTNO)
+		FROM TB_TT_BBS_NTT
+	</select>
+	
+	<!-- 소분류 파일정보 업데이트  -->
+	<update id="updateCmmntySubFileInfo" parameterType="dmap">
+		UPDATE TB_TT_BBS_FILE SET
+			BBSNO = #{bbsNo}
+			<if test="nttNo != null and nttNo != '' "> , NTTNO = #{nttNo} </if>
+		WHERE FILE_ID = #{fileId}
+	</update>
+	
+	<select id="getFileList" parameterType="dmap" resultType="emap">
+		SELECT FILE_ID
+			,FILE_SEQ
+			,FILE_NAME
+			,FILE_SIZE
+			,FILE_MASK
+			,DOWNLOAD_COUNT
+			,DOWNLOAD_EXPIRE_DATE
+			,DOWNLOAD_LIMIT_COUNT
+			,BBSNO
+			,NTTNO
+			,FTYPE
+			,SAVPATH
+			,ORGFILE
+			,SAVFILE
+			,DELETE_YN
+			,REG_DATE
+		FROM TB_TT_BBS_FILE
+		WHERE BBSNO = #{bbsNo}
+		AND NTTNO = #{nttNo}
+	</select>
+	
+	<!-- 커뮤니티 파일 삭제 -->
+	<delete id="deleteCmmntyFile" parameterType="dmap">
+		DELETE FROM TB_TT_BBS_FILE WHERE FILE_ID = #{fileId}
+	</delete>
+	
+	<!-- 커뮤니티관리 소분류 파일카운트 증가 -->
+	<update id="updateCmmntySubFileCount" parameterType="dmap">
+		UPDATE TB_TT_BBS_FILE SET
+			DOWNLOAD_COUNT = (SELECT NVL(MAX(DOWNLOAD_COUNT) , 0)+1 FROM TB_TT_BBS_FILE WHERE BBSNO = #{bbsNo} AND NTTNO = #{nttNo} AND FILE_ID = #{fileId})
+		WHERE BBSNO = #{bbsNo} 
+		AND NTTNO = #{nttNo}
+		AND FILE_ID = #{fileId}
+	</update>
+	
+	<!-- 소분류 답글등록 -->
+	<insert id="insertCmmntySubReplyInfo" parameterType="dmap">
+		INSERT INTO TB_TT_BBS_NTT(
+			NTTNO
+			, BBSNO
+			, PBBSNO
+			, NTT_DEPTH
+			, TITLE
+			, CONTENT
+			, NOTICE_AT
+			, USE_AT
+			, REGIST_ID
+			, REGIST_NM
+			, REGIST_DATE
+			, RCNT
+			)
+			VALUES (
+			 (SELECT NVL(MAX(NTTNO),0)+1 FROM TB_TT_BBS_NTT)
+			 , #{bbsNo}
+			 , #{nttNo}
+			 , #{nttDepth}+1
+			 , #{title}
+			 , #{content}
+			 , #{noticeYn}
+			 , #{useYn}
+			 , #{SES_USERID}
+			 , #{SES_USERNAME}
+			 , SYSDATE
+			 , 0
+			)
+	</insert>
+	
+	<update id="updateCmmnthSubInfo" parameterType="dmap">
+		UPDATE TB_TT_BBS_NTT SET
+			TITLE = #{title}
+			, USE_AT = #{useYn}
+			, NOTICE_AT = #{noticeYn}
+			, CONTENT = #{content}
+			, UPDT_ID = #{SES_USERID}
+			, UPDT_NM = #{SES_USERNAME}
+			, UPDT_DATE = SYSDATE
+		WHERE BBSNO = #{bbsNo}
+		AND NTTNO = #{nttNo}
+	</update>
+	
+	<update id="updateCmmnthSubReplyInfo" parameterType="dmap">
+		UPDATE TB_TT_BBS_NTT SET
+			NOTICE_AT = #{noticeYn}
+			, UPDT_ID = #{SES_USERID}
+			, UPDT_NM = #{SES_USERNAME}
+			, UPDT_DATE = SYSDATE
+		WHERE PBBSNO = #{nttNo}
+		AND NTT_DEPTH = #{nttDepth}+1
+	</update>
+	
+	<!-- 소분류 게시글 삭제 -->
+	<update id="deleteCmmntySubInfo" parameterType="dmap">
+		UPDATE TB_TT_BBS_NTT 
+			SET USE_AT = 'N'
+			, UPDT_ID = #{SES_USERID}
+			, UPDT_NM = #{SES_USERNAME}
+			, UPDT_DATE = SYSDATE
+		WHERE NTTNO = #{nttNo}
+	</update>
+	
+	<!-- 조회수증가 -->
+    <update id="updateCmmntyRcnt" parameterType="dmap">
+        UPDATE TB_TT_BBS_NTT
+           SET RCNT = RCNT+1
+     	WHERE NTTNO = #{nttNo}
+    </update>
+	
+	<!-- 대분류 목록 삭제 -->
+	<delete id="deleteCmmntyInfo">
+		UPDATE TB_TT_BBS_MANAGE 
+			SET USE_AT = 'N'
+        WHERE BBSNO = #{bbsNo}
+        AND REGIST_ID = #{registId}
+        AND BBS_NAME = #{bbsName}
+	</delete>
+	
+	<!-- 커뮤니티관리 서브파일 등록 -->
+	<insert id="insertCmmntySubFileInfo" parameterType="dmap">
+		INSERT INTO TB_TT_BBS_FILE(
+			FILE_ID
+			, BBSNO
+			, NTTNO
+			, FILE_SEQ
+			, ORGFILE
+			, SAVFILE
+			, FILE_SIZE
+			, SAVPATH
+			, FTYPE
+			, REG_DATE
+		)
+		VALUES (
+			(SELECT NVL(MAX(FILE_ID) , 0)+1 FROM TB_TT_BBS_FILE)
+			, #{bbsNo}
+			, #{nttNo}
+			, (SELECT NVL(MAX(FILE_SEQ),0)+1 FROM TB_TT_BBS_FILE WHERE BBSNO = #{bbsNo} AND NTTNO = #{nttNo})
+			, #{uploadFileOrgName}
+			, #{uploadFileSaveName}
+			, #{uploadFileSize}
+			, #{uploadFileFulltPath}
+			, #{uploadFileExt}
+			, SYSDATE
+		)
+	</insert>
+	
+	<select id="getFileInfo" parameterType="int" resultType="emap">
+		SELECT SAVPATH 
+			, SAVFILE
+		 	, ORGFILE 
+		FROM TB_TT_BBS_FILE
+		WHERE FILE_ID = #{fileNo}
+	</select>
+</mapper>

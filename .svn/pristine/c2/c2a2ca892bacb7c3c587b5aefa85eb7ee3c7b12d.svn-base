@@ -1,0 +1,149 @@
+package com.webapp.admin.service.impl;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+
+import com.sangs.support.DataMap;
+import com.sangs.support.EduMap;
+import com.sangs.util.ParamUtil;
+import com.webapp.admin.mapper.AdminMtCodeMngrMapper;
+import com.webapp.admin.service.AdminMtCodeMngrService;
+
+/**
+*
+* Description : 관리자 시스템관리 Service 상세
+*
+* Modification Information
+* 수정일           수정자    수정내용
+* -----------  --------------- -------
+* 2016. 5. 16.  김학규     최초작성
+*
+*/
+
+@Service("adminMtCodeMngrService")
+public class AdminMtCodeMngrServiceImpl implements AdminMtCodeMngrService {
+
+    @Resource(name = "adminMtCodeMngrMapper")
+    private AdminMtCodeMngrMapper adminMtCodeMngrMapper;
+
+    /**
+     * 공통코드 리스트 카운트
+     *
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    public int getMtcodeListCount(DataMap data) throws Exception {
+        return adminMtCodeMngrMapper.getMtcodeListCount(data);
+    }
+
+    
+    /**
+     * 공통코드 리스트
+     *
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    public List<EduMap> getMtcodeList(DataMap data) throws Exception {
+    	data.setInt("rowCount", 20);
+    	ParamUtil.setPagingValue(data);
+        return adminMtCodeMngrMapper.getMtcodeList(data);
+    }
+
+    /**
+     * 공통코드 대분류 상세
+     *
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    public EduMap getMtcodInfo(DataMap data) throws Exception {
+        return adminMtCodeMngrMapper.getMtcodInfo(data);
+    }
+
+    /**
+     * 공통코드 등록
+     *
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    public void insertMtcodeInfo(DataMap data) throws Exception {
+        adminMtCodeMngrMapper.insertMtcodeInfo(data);
+    }
+
+    /**
+     * 공통코드 수정
+     *
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    public void updateMtcodeInfo(DataMap data) throws Exception {
+        adminMtCodeMngrMapper.updateMtcodeInfo(data);
+    }
+
+    /**
+     * 공통코드 상세 등록
+     *
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    public void insertMtcodeSubInfo(DataMap data) throws Exception {
+        adminMtCodeMngrMapper.insertMtcodeSubInfo(data);
+    }
+
+    /**
+     * 공통코드 상세 수정
+     *
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    public void updateMtcodeSubInfo(DataMap data) throws Exception {
+        adminMtCodeMngrMapper.updateMtcodeSubInfo(data);
+    }
+
+
+
+    /**
+     * 공통코드 소분류 리스트
+     *
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    public List<EduMap> getMtcodeSubList(DataMap data) throws Exception {
+        return adminMtCodeMngrMapper.getMtcodeSubList(data);
+    }
+
+    /**
+     * 공통코드 소분류 상세
+     *
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    public EduMap getMtcodeSubInfo(DataMap data) throws Exception {
+        return adminMtCodeMngrMapper.getMtcodeSubInfo(data);
+    }
+
+    /**
+     * 공통코드 소분류 삭제
+     *
+     * @param data
+     * @return
+     * @throws Exception
+     */
+    public void deleteMtcodeSubInfo(DataMap data) throws Exception {
+        adminMtCodeMngrMapper.deleteMtcodeSubInfo(data);
+    }
+
+
+
+}

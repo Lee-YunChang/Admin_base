@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 클래스데스크 > 학생 > 진도학습관련 -->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskUserProgressMapper">
+	<select id="getEdCourseTreeList" parameterType="dmap" resultType="emap">
+        SELECT 
+            TREENO, 
+            COURSENO, 
+            SDAY, 
+            SUBJECT, 
+            SUBCNT,
+            FRAMECNT,
+            RUNTIME,
+            FILE_PATH,
+            TREE_FILE_PATH,
+            START_FILE,
+            (
+              SELECT NVL(ROUND (( AVG(A.FRAMESEQ) /X.FRAMECNT) *100 ,2) ,0)
+                FROM TB_LE_TREE_HIST A
+                     LEFT OUTER JOIN  TB_LE_COURSE_USER B
+                         ON A.CUSERNO = B.CUSERNO
+               WHERE B.CSEQNO = #{SES_CSEQNO}
+                 AND A.TREENO =X.TREENO
+                 AND A.CUSERNO = #{SES_CUSERNO}
+            ) AS AVG_FRAMSEQ,
+            (              
+                SELECT 
+                    NVL(ROUND((MOVSEC/(X.RUNTIME*60)*100), 1), 0) MOVSEC
+              FROM  TB_LE_TREE_HIST C   
+              WHERE C.TREENO =X.TREENO  
+              AND C.CUSERNO =  #{SES_CUSERNO}
+            ) AS MOVSEC,
+            NVL( 
+                 (
+                   SELECT FRAMESEQ 
+                     FROM TB_LE_TREE_HIST C   
+                    WHERE C.TREENO =X.TREENO  
+                      AND C.CUSERNO =  #{SES_CUSERNO}
+                 ) , 0 
+            ) AS FRAMESEQ
+            , (
+                   SELECT TO_CHAR(EDATE ,'YYYY-MM-DD hh24:mi:ss') AS EDATE 
+                     FROM TB_LE_TREE_HIST C   
+                    WHERE C.TREENO =X.TREENO  
+                      AND C.CUSERNO =  #{SES_CUSERNO}
+                 ) AS EDATE
+            , CON_HEIGHT
+            , CON_WIDTH
+        FROM  TB_ED_COURSE_TREE X
+        WHERE COURSENO = #{SES_COURSENO}
+        ORDER BY SDAY    
+	</select>
+	
+	<select id="getEduseqYnInfo" parameterType="dmap" resultType="emap">
+         SELECT 
+         	A.CONURL, B.*  , C.* FROM 
+		(SELECT CONURL FROM TB_ED_COURSE   WHERE COURSENO =  #{SES_COURSENO}          ) A,
+   		(SELECT  EDUSEQ_YN, NVL(OPENTYPE, 'D')OPENTYPE, EXAM_PROG_PERCENT ,  REVIEWDAY FROM TB_ED_COURSE_SEQ WHERE CSEQNO = #{SES_CSEQNO}    )B,
+   		(SELECT 
+		        CASE  WHEN TO_CHAR(STARTDATE,'YYYYMMDD') <![CDATA[<=]]>  TO_CHAR(SYSDATE,'YYYYMMDD') 		   
+		              AND TO_CHAR(ENDDATE,'YYYYMMDD') <![CDATA[>=]]>   TO_CHAR(SYSDATE,'YYYYMMDD') 
+		       THEN 'Y'  
+		       ELSE 'N'  
+		       END AS STUDY_YN,
+		       
+		       CASE  WHEN (TO_CHAR(ENDDATE ,'YYYYMMDD') <![CDATA[< ]]>     TO_CHAR(SYSDATE,'YYYYMMDD')  
+		                OR TO_CHAR(ENDDATE+ (SELECT REVIEWDAY  FROM TB_ED_COURSE_SEQ WHERE CSEQNO = #{SES_CSEQNO} ) ,'YYYYMMDD') <![CDATA[>=]]> TO_CHAR(SYSDATE,'YYYYMMDD')) 
+		       THEN 'Y'  
+		       ELSE 'N'  
+		       END AS RE_STUDY_YN
+		       , NVL(ISPASS, 'N') ISPASS
+       FROM TB_LE_COURSE_USER WHERE CUSERNO =      #{SES_CUSERNO} ) C
+	</select>
+	
+</mapper>

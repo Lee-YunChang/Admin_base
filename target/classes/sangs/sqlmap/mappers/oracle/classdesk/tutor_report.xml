@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<!-- 클래스데스크 > 강사 > 과제관련 -->
+<mapper namespace="com.webapp.classdesk.mapper.ClassdeskTutorReportMapper">
+
+	<sql id="selectItem_fragment">
+	 		A.REPORTNO
+		   , A.CSEQNO
+		   , A.TITLE 
+		   , A.SUMMARY
+		   , A.FILE_PATH
+		   , A.FILE01_ORG
+		   , A.FILE01_SAVE
+		   , A.FILE02_ORG 
+		   , A.FILE02_SAVE
+		   , A.FILE03_ORG
+		   , A.FILE03_ORG
+		   , A.FILE04_SAVE
+		   , A.FILE04_ORG 
+		   , A.SDATE 
+		   , A.EDATE  
+		   , A.EVAL
+		   , A.OPENYN 
+		   , A.RESULTYN
+		    , (SELECT COUNT(1) FROM TB_LE_REPORT_APPLY WHERE REPORTNO = A.REPORTNO AND OPENYN = 'Y') AS SCNT 
+		    , (SELECT COUNT(1) FROM TB_LE_COURSE_USER WHERE CSEQNO = A.CSEQNO AND USEYN = 'Y') AS TOTCNT 
+		   , CASE
+                WHEN TO_CHAR(EDATE,'YYYYMMDD')  <![CDATA[<]]> TO_CHAR(SYSDATE,'YYYYMMDD') THEN 'Y' 
+                ELSE 'N'
+             END AS ENDYN   
+	</sql>
+
+
+	<!--  과제 목록  -->
+	<select id="getReportList" resultType="emap" parameterType="dmap">
+		SELECT 
+			<include refid="selectItem_fragment"/>
+			<!-- ,ROW_NUMBER() OVER (ORDER BY A.REPORTNO ASC) RNUM -->
+			, ROWNUM AS RNUM
+		FROM TB_LE_REPORT A
+		WHERE CSEQNO = #{SES_CSEQNO}
+        ORDER BY REPORTNO DESC
+	</select>
+
+	<!--  과제 상세  -->
+	<select id="getReportItem" resultType="emap" parameterType="dmap">
+		SELECT 
+		   <include refid="selectItem_fragment"/>
+		FROM TB_LE_REPORT A
+		WHERE REPORTNO = #{reportNo}
+	</select>
+	
+	<!--  과제 배점 총 카운트  -->
+	<select id="getReportEvalSummary" resultType="emap" parameterType="dmap">
+		SELECT SUM(EVAL) AS SUM_EVAL
+		FROM TB_LE_REPORT A
+		WHERE CSEQNO = #{SES_CSEQNO}
+		 <if test="reportNo != null and reportNo != ''">
+      	  AND REPORTNO NOT IN(#{reportNo})
+       </if>
+		
+	</select>
+	
+	<!--  과제 배점 총 카운트  -->
+	<select id="getMaxReportSeqNo" resultType="emap" parameterType="dmap">
+		SELECT NVL(MAX(REPORTNO)+1, 1) AS SEQ_REPORT_NO FROM TB_LE_REPORT
+	</select>
+
+
+	<select id="getEvalReportInfo" resultType="emap" parameterType="dmap">
+		SELECT   EVAL_REPORT  
+		FROM TB_ED_COURSE_SEQ 
+		WHERE  CSEQNO = #{SES_CSEQNO}
+	</select>
+
+	<!--  과제 등록  -->
+	<insert id="insertReport" parameterType="dmap">
+		INSERT INTO TB_LE_REPORT 
+			(
+				 REPORTNO, 
+				 CSEQNO, 
+				 TITLE, 
+				 SUMMARY, 
+				 FILE_PATH, 
+				 FILE01_ORG, 
+				 FILE01_SAVE, 
+				 FILE02_ORG, 
+				 FILE02_SAVE, 
+				 FILE03_ORG, 
+				 FILE03_SAVE, 
+				 FILE04_ORG, 
+				 FILE04_SAVE, 
+				 SDATE, 
+				 EDATE, 
+				 EVAL, 
+				 OPENYN, 
+				 RESULTYN 
+			 )
+		VALUES 
+			( 
+				  #{reportNo}
+				, #{SES_CSEQNO} 
+				, #{title}
+				, #{summary}
+				, #{filePath}
+				, #{file01Org}
+				, #{file01Save}
+				, #{file02Org}
+				, #{file02Save} 
+				, #{file03Org}
+				, #{file03Save}
+				, #{file04Org}
+				, #{file04Save}
+				, TO_DATE(#{sdate}, 'yyyy-MM-dd')
+				, TO_DATE(#{edate}, 'yyyy-MM-dd')
+				, #{eval}
+				, #{openYn}
+				, 'N'
+			)
+	
+	</insert>
+
+	<!--  과제 수정  -->
+	<update id="updateReport" parameterType="dmap">
+		UPDATE TB_LE_REPORT
+		SET      TITLE    		= #{title}
+		       , SUMMARY  		= #{summary}
+		       , FILE_PATH  	= #{filePath}
+		       , FILE01_ORG  	= #{file01Org}
+		       , FILE01_SAVE  	= #{file01Save}
+		       , FILE02_ORG   	= #{file02Org}
+		       , FILE02_SAVE  	= #{file02Save}
+		       , FILE03_ORG   	= #{file03Org}
+		       , FILE03_SAVE 	= #{file03Save}
+		       , FILE04_ORG   	= #{file04Org}
+		       , FILE04_SAVE  	= #{file04Save}
+		       , SDATE    = TO_DATE(#{sdate}, 'yyyy-MM-dd')
+		       , EDATE    = TO_DATE(#{edate}, 'yyyy-MM-dd')
+		       , EVAL     = #{eval}
+		       , OPENYN   = #{openYn}
+		       , RESULTYN = 'N'
+		WHERE  REPORTNO = #{reportNo}
+	</update>
+	
+	<!--  과제 삭제  -->
+	<delete id="deleteReport" parameterType="dmap">
+		DELETE FROM TB_LE_REPORT WHERE REPORTNO = #{reportNo}
+	</delete>
+
+	<!--  과제  제출자 삭제  -->
+	<delete id="deleteReportApply" parameterType="dmap">
+		DELETE FROM TB_LE_REPORT_APPLY WHERE REPORTNO = #{reportNo}
+	</delete>
+	<!--  과제 제출자 목록  -->
+	<select id="getReportApplyList" resultType="emap" parameterType="dmap">
+	   SELECT 
+		 	<!-- ROW_NUMBER() OVER (ORDER BY BB.USERNAME ASC) RNUM -->
+		 	ROWNUM AS RNUM
+		 	, BB.MBERNM, BB.UNITY_ID,  AA.*
+ 		FROM
+ 		(
+ 			SELECT 
+	           A.COURSENO,
+	            A.CSEQNO,
+	            A.CUSERNO,
+	            A.FILE01_ORG,
+	            A.FILE01_SAVE,
+	            A.FILE02_ORG,
+	            A.FILE02_SAVE,
+	            A.FILE03_ORG,
+	            A.FILE03_SAVE,
+	            A.FILE04_ORG,
+	            A.FILE04_SAVE,
+	            A.FILE_PATH,
+	            A.OPENYN,
+	            A.REPORTNO,
+	            A.SUMMARY,
+	            A.TITLE,
+	            A.userid,
+	            A.username,
+	            A.userno ,
+	            A.VAL,
+	            A.VAL_CMT,
+	            A.VAL_DATE,
+	            A.VIEWYN,
+	            A.VIEW_DATE,
+	            A.WDATE
+        FROM TB_LE_REPORT_APPLY A  
+        WHERE REPORTNO = #{reportNo}
+		<if test="cUserNo != null and cUserNo != ''">
+      	  AND CUSERNO = #{cUserNo}
+        </if>
+        )AA,
+        ( 
+            SELECT 
+                D.MBERNM, D.UNITY_ID, D.UNITY_MBERNO 
+            FROM 
+                TB_LE_COURSE_USER C, TB_CT_UNITY_MBER D 
+            WHERE C.USERNO = D.UNITY_MBERNO
+            AND  CSEQNO =  #{SES_CSEQNO} 
+            AND USEYN = 'Y'  
+        )BB         
+       WHERE 
+            AA.USERNO (+) = BB.UNITY_MBERNO 
+       ORDER BY BB.MBERNM ASC 
+	</select>
+	<select id="getReportApplyInfo" resultType="emap" parameterType="dmap">
+	SELECT 
+           COURSENO,
+            CSEQNO,
+            CUSERNO,
+            FILE01_ORG,
+            FILE01_SAVE,
+            FILE02_ORG,
+            FILE02_SAVE,
+            FILE03_ORG,
+            FILE03_SAVE,
+            FILE04_ORG,
+            FILE04_SAVE,
+            FILE_PATH,
+            OPENYN,
+            REPORTNO,
+            SUMMARY,
+            TITLE,
+            USERID,
+            (SELECT MBERNM FROM TB_CT_UNITY_MBER WHERE UNITY_MBERNO = A.USERNO) AS USERNAME,
+            USERNO,
+            VAL,
+            VAL_CMT,
+            VAL_DATE,
+            VIEWYN,
+            VIEW_DATE,
+            WDATE
+        FROM TB_LE_REPORT_APPLY A  
+        WHERE REPORTNO = #{reportNo}
+		<if test="cUserNo != null">
+      	  AND CUSERNO = #{cUserNo}
+        </if>
+	</select>
+	  
+	<!--  과제 최종평가반영  -->
+	<update id="updateReportEvalFinal" parameterType="dmap">
+		UPDATE TB_LE_REPORT
+		SET    RESULTYN = #{resultYn}
+		WHERE  REPORTNO = #{reportNo}
+	</update>
+	
+	<!--  과제 평가  -->
+	<update id="updateUserReportEval" parameterType="dmap">
+		UPDATE TB_LE_REPORT_APPLY
+		SET    VAL = #{val}
+				, VAL_CMT = #{valCmt}
+				, VAL_DATE = SYSDATE
+		WHERE  REPORTNO = #{reportNo} 
+		AND    CUSERNO  = #{cUserNo}
+	</update>
+	
+	<select id="getLeExamSetQuizList" resultType="emap" parameterType="dmap">
+		SELECT 
+			QNO, QTYPE, FILE_PATH, QSUBJECT, QSUBJECT_FILE, 
+			A01, A01_FILE, A02, A02_FILE, A03, A03_FILE, A04, A04_FILE, A05, A05_FILE, 
+			RCODE, SUMMARY, WDATE, WRITER, USEYN, COURSENO, SECNO, SETNO
+		FROM TB_LE_EXAM_SQUIZ
+		WHERE SETNO = #{setno}
+	</select>
+
+	<select id="getEvalList" resultType="emap" parameterType="dmap">
+		SELECT EVAL 
+		FROM TB_LE_REPORT_APPLY A, TB_LE_REPORT B
+		WHERE A.REPORTNO = B.REPORTNO
+		AND B.CSEQNO = #{SES_CSEQNO}
+		AND B.RESULTYN = 'Y'
+		AND A.OPENYN = 'Y'
+	</select>
+	
+	<select id="getCuserNoList" resultType="emap" parameterType="dmap">
+		SELECT CUSERNO 
+		FROM TB_LE_REPORT_APPLY A, TB_LE_REPORT B
+		WHERE A.REPORTNO = B.REPORTNO
+		AND B.CSEQNO = #{SES_CSEQNO}
+		AND B.RESULTYN = 'Y'
+		AND A.OPENYN = 'Y'
+	</select>
+	
+	<!-- 성적 반영 -->
+	<update id="reportEvalFinalExec" parameterType="dmap">
+		UPDATE TB_LE_COURSE_USER 
+		SET  REPORT_VAL = #{EVAL} 
+		WHERE CUSERNO = #{CUSERNO}
+	</update>
+
+</mapper>
